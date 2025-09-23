@@ -1,0 +1,72 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<EleVehicleDealer.DAL.EntityModels.EvdmsVehicle>
+@{
+    var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.DAL.EntityModels.EvdmsVehicle;
+}
+
+<h2>Vehicle Management</h2>
+
+<div>
+    <h4>@(editVehicle != null ? "Edit Vehicle" : "Create Vehicle")</h4>
+    <form asp-controller="Vehicle" asp-action="@(editVehicle != null ? "Edit" : "Create")" method="post">
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        @if (editVehicle != null)
+        {
+            <input type="hidden" name="VehicleId" value="@editVehicle.VehicleId" />
+        }
+        <div class="form-group">
+            <label>Model Name</label>
+            <input name="ModelName" class="form-control" value="@(editVehicle?.ModelName ?? "")" required />
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <input name="Type" class="form-control" value="@(editVehicle?.Type ?? "")" required />
+        </div>
+        <div class="form-group">
+            <label>Price</label>
+            <input name="Price" class="form-control" type="number" step="0.01" value="@(editVehicle?.Price ?? 0)" required />
+        </div>
+        <div class="form-group">
+            <label>Stock Quantity</label>
+            <input name="StockQuantity" class="form-control" type="number" value="@(editVehicle?.StockQuantity ?? 0)" required />
+        </div>
+        <button type="submit" class="btn btn-success">@(editVehicle != null ? "Save" : "Create")</button>
+        @if (editVehicle != null)
+        {
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        }
+    </form>
+</div>
+
+<hr />
+
+<!-- Danh sách xe -->
+<table class="table">
+    <thead>
+        <tr>
+            <th>Model Name</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var v in Model)
+        {
+            <tr>
+                <td>@v.ModelName</td>
+                <td>@v.Type</td>
+                <td>@v.Price</td>
+                <td>@v.StockQuantity</td>
+                <td>
+                    <form action="/Vehicle/Delete" method="post" style="display:inline">
+                        <input type="hidden" name="id" value="@v.VehicleId" />
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this vehicle?')">Delete</button>
+                    </form>
+                    <a asp-action="Index" asp-route-editId="@v.VehicleId" class="btn btn-primary btn-sm">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

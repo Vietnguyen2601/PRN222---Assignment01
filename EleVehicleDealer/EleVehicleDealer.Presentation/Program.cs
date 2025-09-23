@@ -1,15 +1,19 @@
-﻿using EleVehicleDealer.BLL;
+﻿using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.BLL.Services;
 using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.DAL.Repositories.IRepository;
+using EleVehicleDealer.DAL.Repositories.Repository;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
 //builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<EvdmsDatabaseContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(EvdmsDatabaseContext.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
@@ -28,17 +32,8 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-// Cấu hình route mặc định cho MVC
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// Thêm route cụ thể cho TestDb nếu cần
-app.MapControllerRoute(
-    name: "testdb",
-    pattern: "TestDb/{action=Test}/{id?}",
-    defaults: new { controller = "TestDb" });
-
-//app.MapRazorPages();
+    pattern: "{controller=Vehicle}/{action=Index}/{id?}");
 
 app.Run();

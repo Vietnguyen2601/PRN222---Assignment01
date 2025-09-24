@@ -13,6 +13,8 @@ public partial class EvdmsOrder
 
     public int? UserId { get; set; }
 
+    public int? QuoteId { get; set; }
+
     public DateTime? OrderDate { get; set; }
 
     public int Quantity { get; set; }
@@ -21,9 +23,23 @@ public partial class EvdmsOrder
 
     public string Status { get; set; } = null!;
 
+    public string? DeliveryStatus { get; set; }
+
     public string? TrackingInfo { get; set; }
 
+    public int? ApprovedBy { get; set; }
+
+    public DateTime? ApprovedDate { get; set; }
+
+    public virtual EvdmsUser? ApprovedByNavigation { get; set; }
+
     public virtual EvdmsCustomer? Customer { get; set; }
+
+    public virtual ICollection<EvdmsContract> EvdmsContracts { get; set; } = new List<EvdmsContract>();
+
+    public virtual ICollection<EvdmsPayment> EvdmsPayments { get; set; } = new List<EvdmsPayment>();
+
+    public virtual EvdmsQuote? Quote { get; set; }
 
     public virtual EvdmsUser? User { get; set; }
 

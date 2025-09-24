@@ -1,3 +1,4 @@
+using EleVehicleDealer.DAL.DBContext;
 using EleVehicleDealer.DAL.EntityModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

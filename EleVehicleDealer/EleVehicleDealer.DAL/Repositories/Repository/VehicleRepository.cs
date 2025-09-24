@@ -1,4 +1,5 @@
-﻿using EleVehicleDealer.DAL.EntityModels;
+﻿using EleVehicleDealer.DAL.DBContext;
+using EleVehicleDealer.DAL.EntityModels;
 using EleVehicleDealer.DAL.Repositories.Base;
 using EleVehicleDealer.DAL.Repositories.IRepository;
 using Microsoft.EntityFrameworkCore;

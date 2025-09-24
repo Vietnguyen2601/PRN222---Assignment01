@@ -1,234 +1,214 @@
 ﻿-- Tạo hoặc sử dụng database
-IF DB_ID('evdms_database') IS NULL
+IF DB_ID('vehicle_management_database') IS NULL
     CREATE DATABASE evdms_database;
 GO
 USE evdms_database;
 GO
 
--- Xóa các foreign key constraints và bảng
+-- Xóa các foreign key constraints và bảng evdms_ cũ
 BEGIN TRY
-    -- Xóa foreign key constraints động
+    -- Xóa foreign key constraints động cho cả bảng cũ và mới
     DECLARE @sql NVARCHAR(MAX) = '';
-    SELECT @sql += 'ALTER TABLE ' + QUOTENAME(OBJECT_NAME(parent_object_id)) + 
+    SELECT @sql += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' + 
+                   QUOTENAME(OBJECT_NAME(parent_object_id)) + 
                    ' DROP CONSTRAINT ' + QUOTENAME(name) + ';'
     FROM sys.foreign_keys
-    WHERE parent_object_id IN (SELECT object_id FROM sys.tables WHERE name LIKE 'evdms_%');
+    WHERE parent_object_id IN (SELECT object_id FROM sys.tables 
+        WHERE name IN ('Account', 'Role', 'Account_Role', 'Station', 'Vehicle', 'Inventory', 
+                       'Promotion', 'Orders', 'Contract', 'Payment', 'Feedback', 'Report', 
+                       'Staff_Revenue', 'evdms_reports', 'evdms_payments', 'evdms_contracts', 
+                       'evdms_quotes', 'evdms_vehicle_bookings', 'evdms_test_drives', 
+                       'evdms_feedback', 'evdms_promotions', 'evdms_orders', 
+                       'evdms_vehicle_features', 'evdms_vehicles', 'evdms_customers', 
+                       'evdms_accounts', 'evdms_users', 'evdms_roles'));
     IF @sql != ''
         EXEC sp_executesql @sql;
 
-    -- Xóa bảng
+    -- Xóa các bảng evdms_ cũ và bảng mới
     DROP TABLE IF EXISTS evdms_reports, evdms_payments, evdms_contracts, evdms_quotes, 
         evdms_vehicle_bookings, evdms_test_drives, evdms_feedback, evdms_promotions, 
         evdms_orders, evdms_vehicle_features, evdms_vehicles, evdms_customers, 
-        evdms_accounts, evdms_users, evdms_roles;
-    PRINT 'Existing tables and constraints dropped.';
+        evdms_accounts, evdms_users, evdms_roles,
+        Account, Role, Account_Role, Station, Vehicle, Inventory, 
+        Promotion, Orders, Contract, Payment, Feedback, Report, Staff_Revenue;
+
+    PRINT 'All existing tables and constraints dropped.';
 END TRY
 BEGIN CATCH
     PRINT 'Error dropping tables/constraints: ' + ERROR_MESSAGE();
 END CATCH
 GO
 
--- Tạo bảng
+-- Tạo bảng mới
 BEGIN TRY
-    -- Roles
-    CREATE TABLE evdms_roles (
+    -- Role
+    CREATE TABLE [Role] (
         role_id INT IDENTITY(1,1) PRIMARY KEY,
-        role_name VARCHAR(50) NOT NULL UNIQUE,
-        description TEXT,
-        created_at DATETIME DEFAULT GETDATE()
+        role_name NVARCHAR(255) NOT NULL UNIQUE,
+        is_active BIT DEFAULT 1
     );
+    PRINT 'Table [Role] created.';
 
-    -- Users
-    CREATE TABLE evdms_users (
-        user_id INT IDENTITY(1,1) PRIMARY KEY,
-        full_name VARCHAR(100) NOT NULL,
-        contact_info VARCHAR(100),
-        role_id INT NOT NULL,
-        created_at DATETIME DEFAULT GETDATE(),
-        CONSTRAINT FK__evdms_users__role_id FOREIGN KEY (role_id) REFERENCES evdms_roles(role_id) ON DELETE NO ACTION
-    );
-
-    -- Accounts
-    CREATE TABLE evdms_accounts (
+    -- Account
+    CREATE TABLE [Account] (
         account_id INT IDENTITY(1,1) PRIMARY KEY,
-        user_id INT NOT NULL,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        email VARCHAR(100) NOT NULL UNIQUE,
-        Password VARCHAR(255) NOT NULL,
-        refresh_token VARCHAR(255),
-        token_expiry DATETIME,
-        last_login DATETIME,
+        username NVARCHAR(255) NOT NULL UNIQUE,
+        password NVARCHAR(255) NOT NULL,
+        email NVARCHAR(255) NOT NULL UNIQUE,
+        contact_number NVARCHAR(255),
+        created_at DATETIME DEFAULT GETDATE(),
+        is_active BIT DEFAULT 1
+    );
+    PRINT 'Table [Account] created.';
+
+    -- Account_Role
+    CREATE TABLE [Account_Role] (
+        account_role_id INT IDENTITY(1,1) PRIMARY KEY,
+        account_id INT NOT NULL,
+        role_id INT NOT NULL,
         is_active BIT DEFAULT 1,
-        created_at DATETIME DEFAULT GETDATE(),
-        CONSTRAINT FK__evdms_accounts__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE CASCADE
+        CONSTRAINT FK__Account_Role__account_id FOREIGN KEY (account_id) REFERENCES [Account](account_id) ON DELETE CASCADE,
+        CONSTRAINT FK__Account_Role__role_id FOREIGN KEY (role_id) REFERENCES [Role](role_id) ON DELETE CASCADE
     );
+    PRINT 'Table [Account_Role] created.';
 
-    -- Customers
-    CREATE TABLE evdms_customers (
-        customer_id INT IDENTITY(1,1) PRIMARY KEY,
-        full_name VARCHAR(100) NOT NULL,
-        contact_info VARCHAR(100) NOT NULL,
-        address TEXT,
-        transaction_history NVARCHAR(MAX),
-        assigned_staff_id INT NULL,
-        created_at DATETIME DEFAULT GETDATE(),
-        CONSTRAINT FK__evdms_customers__assigned_staff_id FOREIGN KEY (assigned_staff_id) REFERENCES evdms_users(user_id) ON DELETE SET NULL
+    -- Station
+    CREATE TABLE [Station] (
+        station_id INT IDENTITY(1,1) PRIMARY KEY,
+        station_name NVARCHAR(255) NOT NULL,
+        location NVARCHAR(255),
+        contact_number NVARCHAR(255),
+        admin_id INT,
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Station__admin_id FOREIGN KEY (admin_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
     );
+    PRINT 'Table [Station] created.';
 
-    -- Vehicles
-    CREATE TABLE evdms_vehicles (
+    -- Vehicle
+    CREATE TABLE [Vehicle] (
         vehicle_id INT IDENTITY(1,1) PRIMARY KEY,
-        model_name VARCHAR(100) NOT NULL,
-        type VARCHAR(50),
+        model NVARCHAR(255) NOT NULL,
+        type NVARCHAR(255),
+        color NVARCHAR(255),
         price DECIMAL(12, 2) NOT NULL,
-        stock_quantity INT NOT NULL,
-        configuration NVARCHAR(MAX),
-        created_at DATETIME DEFAULT GETDATE()
+        availability BIT NOT NULL,
+        station_id INT,
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Vehicle__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE SET NULL
     );
+    PRINT 'Table [Vehicle] created.';
 
-    -- Vehicle Features
-    CREATE TABLE evdms_vehicle_features (
-        feature_id INT IDENTITY(1,1) PRIMARY KEY,
+    -- Inventory
+    CREATE TABLE [Inventory] (
+        inventory_id INT IDENTITY(1,1) PRIMARY KEY,
         vehicle_id INT NOT NULL,
-        feature_name VARCHAR(100) NOT NULL,
-        feature_value TEXT,
-        CONSTRAINT FK__evdms_vehicle_features__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES evdms_vehicles(vehicle_id) ON DELETE CASCADE
+        station_id INT NOT NULL,
+        quantity INT NOT NULL,
+        last_updated DATETIME DEFAULT GETDATE(),
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Inventory__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE CASCADE,
+        CONSTRAINT FK__Inventory__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE CASCADE
     );
+    PRINT 'Table [Inventory] created.';
 
-    -- Promotions
-    CREATE TABLE evdms_promotions (
+    -- Promotion
+    CREATE TABLE [Promotion] (
         promotion_id INT IDENTITY(1,1) PRIMARY KEY,
-        promotion_name VARCHAR(100) NOT NULL,
-        description TEXT,
+        promo_code NVARCHAR(255) NOT NULL UNIQUE,
         discount_percentage DECIMAL(5, 2),
         start_date DATETIME NOT NULL,
         end_date DATETIME NOT NULL,
-        created_at DATETIME DEFAULT GETDATE()
+        applicable_to NVARCHAR(255),
+        station_id INT,
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Promotion__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE SET NULL
     );
-
-    -- Quotes
-    CREATE TABLE evdms_quotes (
-        quote_id INT IDENTITY(1,1) PRIMARY KEY,
-        customer_id INT NOT NULL,
-        vehicle_id INT NOT NULL,
-        user_id INT NOT NULL,
-        promotion_id INT NULL,
-        quote_amount DECIMAL(12, 2) NOT NULL,
-        quote_date DATETIME DEFAULT GETDATE(),
-        status VARCHAR(20) NOT NULL DEFAULT 'Pending' 
-            CHECK (status IN ('Pending', 'Accepted', 'Rejected')),
-        CONSTRAINT FK__evdms_quotes__customer_id FOREIGN KEY (customer_id) REFERENCES evdms_customers(customer_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_quotes__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES evdms_vehicles(vehicle_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_quotes__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_quotes__promotion_id FOREIGN KEY (promotion_id) REFERENCES evdms_promotions(promotion_id) ON DELETE SET NULL
-    );
+    PRINT 'Table [Promotion] created.';
 
     -- Orders
-    CREATE TABLE evdms_orders (
+    CREATE TABLE [Orders] (
         order_id INT IDENTITY(1,1) PRIMARY KEY,
-        customer_id INT NULL,
-        vehicle_id INT NULL,
-        user_id INT NULL,
-        quote_id INT NULL,
+        customer_id INT,
+        vehicle_id INT,
         order_date DATETIME DEFAULT GETDATE(),
-        quantity INT NOT NULL,
-        total_amount DECIMAL(12, 2) NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'Pending' 
-            CHECK (status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')),
-        delivery_status VARCHAR(50) NULL,
-        tracking_info TEXT,
-        approved_by INT NULL,
-        approved_date DATETIME NULL,
-        CONSTRAINT FK__evdms_orders__customer_id FOREIGN KEY (customer_id) REFERENCES evdms_customers(customer_id) ON DELETE SET NULL,
-        CONSTRAINT FK__evdms_orders__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES evdms_vehicles(vehicle_id) ON DELETE SET NULL,
-        CONSTRAINT FK__evdms_orders__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE SET NULL,
-        CONSTRAINT FK__evdms_orders__quote_id FOREIGN KEY (quote_id) REFERENCES evdms_quotes(quote_id) ON DELETE NO ACTION,
-        CONSTRAINT FK__evdms_orders__approved_by FOREIGN KEY (approved_by) REFERENCES evdms_users(user_id) ON DELETE NO ACTION
+        total_price DECIMAL(12, 2) NOT NULL,
+        status NVARCHAR(255) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')),
+        promotion_id INT,
+        staff_id INT,
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Orders__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE NO ACTION,
+        CONSTRAINT FK__Orders__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE SET NULL,
+        CONSTRAINT FK__Orders__promotion_id FOREIGN KEY (promotion_id) REFERENCES [Promotion](promotion_id) ON DELETE SET NULL,
+        CONSTRAINT FK__Orders__staff_id FOREIGN KEY (staff_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
     );
+    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Orders')
+        PRINT 'Table [Orders] created successfully.';
+    ELSE
+        RAISERROR ('Table [Orders] creation failed.', 16, 1);
 
-    -- Contracts
-    CREATE TABLE evdms_contracts (
+    -- Contract
+    CREATE TABLE [Contract] (
         contract_id INT IDENTITY(1,1) PRIMARY KEY,
         order_id INT NOT NULL,
-        customer_id INT NOT NULL,
-        contract_details NVARCHAR(MAX),
         contract_date DATETIME DEFAULT GETDATE(),
-        status VARCHAR(20) NOT NULL DEFAULT 'Draft' 
-            CHECK (status IN ('Draft', 'Signed', 'Terminated')),
-        CONSTRAINT FK__evdms_contracts__order_id FOREIGN KEY (order_id) REFERENCES evdms_orders(order_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_contracts__customer_id FOREIGN KEY (customer_id) REFERENCES evdms_customers(customer_id) ON DELETE NO ACTION
+        terms TEXT,
+        signature NVARCHAR(255),
+        status NVARCHAR(255) NOT NULL DEFAULT 'Draft' CHECK (status IN ('Draft', 'Signed', 'Terminated')),
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Contract__order_id FOREIGN KEY (order_id) REFERENCES [Orders](order_id) ON DELETE NO ACTION
     );
+    PRINT 'Table [Contract] created.';
 
-    -- Vehicle Bookings
-    CREATE TABLE evdms_vehicle_bookings (
-        booking_id INT IDENTITY(1,1) PRIMARY KEY,
-        vehicle_id INT NOT NULL,
-        user_id INT NOT NULL,
-        quantity INT NOT NULL,
-        booking_date DATETIME DEFAULT GETDATE(),
-        status VARCHAR(20) NOT NULL DEFAULT 'Pending' 
-            CHECK (status IN ('Pending', 'Approved', 'Rejected')),
-        CONSTRAINT FK__evdms_vehicle_bookings__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES evdms_vehicles(vehicle_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_vehicle_bookings__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE CASCADE
-    );
-
-    -- Payments
-    CREATE TABLE evdms_payments (
+    -- Payment
+    CREATE TABLE [Payment] (
         payment_id INT IDENTITY(1,1) PRIMARY KEY,
         order_id INT NOT NULL,
-        customer_id INT NOT NULL,
-        payment_type VARCHAR(20) NOT NULL 
-            CHECK (payment_type IN ('Direct', 'Installment')),
         amount DECIMAL(12, 2) NOT NULL,
         payment_date DATETIME DEFAULT GETDATE(),
-        installment_plan NVARCHAR(MAX),
-        debt_amount DECIMAL(12, 2) DEFAULT 0.00,
-        status VARCHAR(20) NOT NULL DEFAULT 'Pending'
-            CHECK (status IN ('Pending', 'Completed', 'Overdue')),
-        CONSTRAINT FK__evdms_payments__order_id FOREIGN KEY (order_id) REFERENCES evdms_orders(order_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_payments__customer_id FOREIGN KEY (customer_id) REFERENCES evdms_customers(customer_id) ON DELETE NO ACTION
+        payment_method NVARCHAR(255) NOT NULL CHECK (payment_method IN ('Cash', 'Credit Card', 'Bank Transfer', 'Installment')),
+        status NVARCHAR(255) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Completed', 'Failed')),
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Payment__order_id FOREIGN KEY (order_id) REFERENCES [Orders](order_id) ON DELETE NO ACTION
     );
-
-    -- Test Drives
-    CREATE TABLE evdms_test_drives (
-        test_drive_id INT IDENTITY(1,1) PRIMARY KEY,
-        customer_id INT NOT NULL,
-        vehicle_id INT NOT NULL,
-        user_id INT NOT NULL,
-        test_drive_date DATETIME NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'Scheduled' 
-            CHECK (status IN ('Scheduled', 'Completed', 'Cancelled')),
-        CONSTRAINT FK__evdms_test_drives__customer_id FOREIGN KEY (customer_id) REFERENCES evdms_customers(customer_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_test_drives__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES evdms_vehicles(vehicle_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_test_drives__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE CASCADE
-    );
+    PRINT 'Table [Payment] created.';
 
     -- Feedback
-    CREATE TABLE evdms_feedback (
+    CREATE TABLE [Feedback] (
         feedback_id INT IDENTITY(1,1) PRIMARY KEY,
         customer_id INT NOT NULL,
-        user_id INT NOT NULL,
-        feedback_type VARCHAR(20) NOT NULL 
-            CHECK (feedback_type IN ('Feedback', 'Complaint')),
-        feedback_content TEXT NOT NULL,
+        vehicle_id INT NOT NULL,
+        rating INT CHECK (rating BETWEEN 1 AND 5),
+        comment TEXT,
         feedback_date DATETIME DEFAULT GETDATE(),
-        status VARCHAR(20) NOT NULL DEFAULT 'Open' 
-            CHECK (status IN ('Open', 'Resolved', 'Escalated')),
-        CONSTRAINT FK__evdms_feedback__customer_id FOREIGN KEY (customer_id) REFERENCES evdms_customers(customer_id) ON DELETE CASCADE,
-        CONSTRAINT FK__evdms_feedback__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE CASCADE
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Feedback__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE CASCADE,
+        CONSTRAINT FK__Feedback__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE CASCADE
     );
+    PRINT 'Table [Feedback] created.';
 
-    -- Reports
-    CREATE TABLE evdms_reports (
+    -- Report
+    CREATE TABLE [Report] (
         report_id INT IDENTITY(1,1) PRIMARY KEY,
-        user_id INT NULL,
-        report_type VARCHAR(50) NULL CHECK (
-            report_type IN ('Sales', 'Inventory', 'Customer', 'System', 'SalesBySalesperson', 'Debt', 'CustomerReport')
-        ),
-        report_data NVARCHAR(MAX),
-        generated_at DATETIME DEFAULT GETDATE(),
-        CONSTRAINT FK__evdms_reports__user_id FOREIGN KEY (user_id) REFERENCES evdms_users(user_id) ON DELETE SET NULL
+        report_type NVARCHAR(255) CHECK (report_type IN ('Sales', 'Inventory', 'Customer', 'Revenue')),
+        generated_date DATETIME DEFAULT GETDATE(),
+        data NVARCHAR(MAX),
+        account_id INT,
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Report__account_id FOREIGN KEY (account_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
     );
+    PRINT 'Table [Report] created.';
+
+    -- Staff_Revenue
+    CREATE TABLE [Staff_Revenue] (
+        staff_revenue_id INT IDENTITY(1,1) PRIMARY KEY,
+        staff_id INT NOT NULL,
+        revenue_date DATETIME DEFAULT GETDATE(),
+        total_revenue DECIMAL(12, 2) NOT NULL,
+        commission DECIMAL(12, 2),
+        is_active BIT DEFAULT 1,
+        CONSTRAINT FK__Staff_Revenue__staff_id FOREIGN KEY (staff_id) REFERENCES [Account](account_id) ON DELETE CASCADE
+    );
+    PRINT 'Table [Staff_Revenue] created.';
 
     PRINT 'All tables created successfully.';
 END TRY
@@ -238,97 +218,76 @@ END CATCH
 GO
 
 -- Chèn dữ liệu mẫu
-    -- Roles
-    INSERT INTO evdms_roles (role_name, description) VALUES
-    ('DealerStaff', 'Nhân viên đại lý, xử lý đơn hàng cơ bản'),
-    ('DealerManager', 'Quản lý đại lý, có quyền duyệt đơn hàng'),
-    ('EVMStaff', 'Nhân viên EVM, quản lý xe và kho'),
-    ('Admin', 'Quản trị viên hệ thống'),
-    ('SuperAdmin', 'Quản trị viên cấp cao, toàn quyền hệ thống'),
-    ('Guest', 'Khách, quyền truy cập hạn chế');
+    -- Role
+    INSERT INTO [Role] (role_name) VALUES
+    ('Admin'), ('Staff'), ('Customer');
 
-    -- Users
-    INSERT INTO evdms_users (full_name, contact_info, role_id) VALUES
-    ('Nguyen Van A', '0901234567', 1),
-    ('Tran Van B', '0902345678', 2),
-    ('Le Thi C', '0903456789', 3),
-    ('Pham Van D', '0904567890', 4),
-    ('Hoang Van E', '0905678901', 5),
-    ('Khach Moi', '0906789012', 6);
+    -- Account
+    INSERT INTO [Account] (username, password, email, contact_number) VALUES
+    ('admin1', 'pass123', 'admin1@email.com', '0901234567'),
+    ('staff1', 'pass456', 'staff1@email.com', '0902345678'),
+    ('customer1', 'pass789', 'customer1@email.com', '0903456789'),
+    ('customer2', 'pass101', 'customer2@email.com', '0904567890');
 
-    -- Accounts
-    INSERT INTO evdms_accounts (user_id, username, email, Password, is_active) VALUES
-    (1, 'staff1', 'a.nguyen@email.com', 'password1', 1),
-    (2, 'manager1', 'b.tran@email.com', 'password2', 1),
-    (3, 'evm1', 'c.le@email.com', 'password3', 1),
-    (4, 'admin1', 'd.pham@email.com', 'password4', 1),
-    (5, 'superadmin1', 'superadmin@email.com', 'password5', 1),
-    (6, 'guest1', 'guest@email.com', 'password6', 1);
+    -- Account_Role
+    INSERT INTO [Account_Role] (account_id, role_id) VALUES
+    (1, 1), (2, 2), (3, 3), (4, 3);
 
-    -- Customers
-    INSERT INTO evdms_customers (full_name, contact_info, address, transaction_history, assigned_staff_id) VALUES
-    ('Hoang Van E', 'e.hoang@email.com', '123 Hanoi', '{"orders": 1, "total_spent": 50000.00}', 1),
-    ('Pham Thi F', 'f.pham@email.com', '456 HCMC', '{"orders": 2, "total_spent": 120000.00}', 2);
+    -- Station
+    INSERT INTO [Station] (station_name, location, contact_number, admin_id) VALUES
+    ('Hanoi Station', '123 Hanoi St', '0901112223', 1),
+    ('HCMC Station', '456 HCMC St', '0902223334', 1);
 
-    -- Vehicles
-    INSERT INTO evdms_vehicles (model_name, type, price, stock_quantity, configuration) VALUES
-    ('Model X', 'Sedan', 50000.00, 10, '{"engine": "2.0L", "color": "Black"}'),
-    ('Model Y', 'SUV', 60000.00, 5, '{"engine": "3.0L", "color": "White"}');
+    -- Vehicle
+    INSERT INTO [Vehicle] (model, type, color, price, availability, station_id) VALUES
+    ('Model X', 'Sedan', 'Black', 50000.00, 1, 1),
+    ('Model Y', 'SUV', 'White', 60000.00, 1, 2);
 
-    -- Vehicle Features
-    INSERT INTO evdms_vehicle_features (vehicle_id, feature_name, feature_value) VALUES
-    (1, 'Top Speed', '200 km/h'),
-    (1, 'Fuel Type', 'Petrol'),
-    (2, 'Top Speed', '220 km/h'),
-    (2, 'Fuel Type', 'Hybrid');
+    -- Inventory
+    INSERT INTO [Inventory] (vehicle_id, station_id, quantity) VALUES
+    (1, 1, 10),
+    (2, 2, 5);
 
-    -- Promotions
-    INSERT INTO evdms_promotions (promotion_name, description, discount_percentage, start_date, end_date) VALUES
-    ('Summer Sale', 'Giảm giá mùa hè', 10.00, '2025-06-01', '2025-08-31'),
-    ('Year-End Promo', 'Khuyến mãi cuối năm', 15.00, '2025-12-01', '2025-12-31');
-
-    -- Quotes
-    INSERT INTO evdms_quotes (customer_id, vehicle_id, user_id, promotion_id, quote_amount, status) VALUES
-    (1, 1, 1, 1, 45000.00, 'Accepted'),
-    (2, 2, 2, 2, 102000.00, 'Pending');
+    -- Promotion
+    INSERT INTO [Promotion] (promo_code, discount_percentage, start_date, end_date, applicable_to, station_id) VALUES
+    ('SUMMER25', 10.00, '2025-06-01', '2025-08-31', 'All Vehicles', 1),
+    ('YEAR_END', 15.00, '2025-12-01', '2025-12-31', 'SUV', 2);
 
     -- Orders
-    INSERT INTO evdms_orders (customer_id, vehicle_id, user_id, quote_id, quantity, total_amount, status, delivery_status, tracking_info, approved_by, approved_date) VALUES
-    (1, 1, 1, 1, 1, 45000.00, 'Shipped', 'In Transit', 'Shipped to Hanoi', 2, GETDATE()),
-    (2, 2, 2, 2, 2, 102000.00, 'Processing', 'Preparing', 'In transit to HCMC', NULL, NULL);
+    INSERT INTO [Orders] (customer_id, vehicle_id, total_price, status, promotion_id, staff_id) VALUES
+    (3, 1, 45000.00, 'Shipped', 1, 2),
+    (4, 2, 51000.00, 'Pending', 2, 2);
 
-    -- Contracts
-    INSERT INTO evdms_contracts (order_id, customer_id, contract_details, status) VALUES
-    (1, 1, '{"terms": "Pay within 30 days"}', 'Signed'),
-    (2, 2, '{"terms": "Installment plan"}', 'Draft');
+    -- Contract
+    INSERT INTO [Contract] (order_id, terms, signature, status) VALUES
+    (1, 'Pay within 30 days', 'Customer1', 'Signed'),
+    (2, 'Installment plan', NULL, 'Draft');
 
-    -- Vehicle Bookings
-    INSERT INTO evdms_vehicle_bookings (vehicle_id, user_id, quantity, status) VALUES
-    (1, 1, 2, 'Approved'),
-    (2, 2, 1, 'Pending');
-
-    -- Payments
-    INSERT INTO evdms_payments (order_id, customer_id, payment_type, amount, installment_plan, debt_amount, status) VALUES
-    (1, 1, 'Direct', 45000.00, NULL, 0.00, 'Completed'),
-    (2, 2, 'Installment', 51000.00, '{"months": 12, "monthly_payment": 4250.00}', 51000.00, 'Pending');
-
-    -- Test Drives
-    INSERT INTO evdms_test_drives (customer_id, vehicle_id, user_id, test_drive_date, status) VALUES
-    (1, 1, 1, '2025-09-25 10:00:00', 'Scheduled'),
-    (2, 2, 2, '2025-09-26 14:00:00', 'Completed');
+    -- Payment
+    INSERT INTO [Payment] (order_id, amount, payment_method, status) VALUES
+    (1, 45000.00, 'Cash', 'Completed'),
+    (2, 51000.00, 'Installment', 'Pending');
 
     -- Feedback
-    INSERT INTO evdms_feedback (customer_id, user_id, feedback_type, feedback_content, status) VALUES
-    (1, 1, 'Feedback', 'Great service!', 'Resolved'),
-    (2, 2, 'Complaint', 'Delivery delayed', 'Open');
+    INSERT INTO [Feedback] (customer_id, vehicle_id, rating, comment) VALUES
+    (3, 1, 5, 'Great vehicle!'),
+    (4, 2, 3, 'Delivery delayed');
 
-    -- Reports
-    INSERT INTO evdms_reports (user_id, report_type, report_data) VALUES
-    (1, 'SalesBySalesperson', '{"salesperson_id": 1, "total_sales": 45000.00, "orders": 1}'),
-    (2, 'Debt', '{"customer_id": 2, "debt_amount": 51000.00}'),
-    (4, 'Inventory', '{"model_x_stock": 10, "model_y_stock": 5}');
+    -- Report
+    INSERT INTO [Report] (report_type, data, account_id) VALUES
+    ('Sales', '{"total_sales": 45000.00, "orders": 1}', 2),
+    ('Inventory', '{"model_x_stock": 10, "model_y_stock": 5}', 1);
+
+    -- Staff_Revenue
+    INSERT INTO [Staff_Revenue] (staff_id, total_revenue, commission) VALUES
+    (2, 45000.00, 4500.00),
+    (2, 51000.00, 5100.00);
 GO
 
 -- Kiểm tra các bảng đã tạo
-SELECT name AS TableName FROM sys.tables WHERE name LIKE 'evdms_%';
+SELECT name AS TableName FROM sys.tables 
+WHERE name IN ('Account', 'Role', 'Account_Role', 'Station', 'Vehicle', 'Inventory', 
+               'Promotion', 'Orders', 'Contract', 'Payment', 'Feedback', 'Report', 
+               'Staff_Revenue')
+ORDER BY name;
 GO

@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace EleVehicleDealer.DAL.Repositories.IRepository
 {
-    public interface IAccountRepository : IGenericRepository<EvdmsAccount>
+    public interface IAccountRepository : IGenericRepository<Account>
     {
-        Task<EvdmsAccount?> GetByUsernameAsync(string username);
+        Task<Account?> GetByUsernameAsync(string username);
     }
 }

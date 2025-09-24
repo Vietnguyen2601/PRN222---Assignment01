@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace EleVehicleDealer.DAL.Repositories.Repository
 {
-    public class AccountRepository : GenericRepository<EvdmsAccount>, IAccountRepository
+    public class AccountRepository : GenericRepository<Account>, IAccountRepository
     {
         private readonly EvdmsDatabaseContext _context;
         public AccountRepository(EvdmsDatabaseContext context) : base(context)
@@ -20,12 +20,12 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<EvdmsAccount?> GetByUsernameAsync(string username)
+        public async Task<Account?> GetByUsernameAsync(string username)
         {
             if (string.IsNullOrWhiteSpace(username))
                 throw new ArgumentException("Username cannot be empty", nameof(username));
 
-            return await _context.EvdmsAccounts
+            return await _context.Accounts
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Username == username);
         }

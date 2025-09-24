@@ -1,7 +1,9 @@
 ﻿using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.DAL.DBContext;
 using EleVehicleDealer.DAL.EntityModels;
 using EleVehicleDealer.DAL.Repositories.IRepository;
 using EleVehicleDealer.DAL.Repositories.Repository;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,38 +15,17 @@ namespace EleVehicleDealer.BLL.Services
     public class VehicleService : IVehicleService
     {
         private readonly IVehicleRepository _vehicleRepository;
-        public VehicleService(IVehicleRepository vehicleRepository)
+        private readonly EvdmsDatabaseContext _context = new EvdmsDatabaseContext();
+
+        public VehicleService(IVehicleRepository vehicleRepository, EvdmsDatabaseContext context)
         {
             _vehicleRepository = vehicleRepository ?? throw new ArgumentNullException(nameof(vehicleRepository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IEnumerable<EvdmsVehicle>> GetAllAsync()
-            => await _vehicleRepository.GetAllAsync();
-
-        public async Task<EvdmsVehicle> GetByIdAsync(int id)
-            => await _vehicleRepository.GetByIdAsync(id);
-
-        public async Task<EvdmsVehicle> CreateAsync(EvdmsVehicle vehicle)
+        public async Task<Vehicle> CreateAsync(Vehicle vehicle)
         {
-            if (vehicle == null)
-                throw new ArgumentNullException(nameof(vehicle));
-
             return await _vehicleRepository.CreateVehicleAsync(vehicle);
-        }
-
-        public async Task<EvdmsVehicle> UpdateAsync(EvdmsVehicle vehicle)
-        {
-            if (vehicle == null)
-                throw new ArgumentNullException(nameof(vehicle));
-
-            // Ensure the vehicle exists
-            var existingVehicle = await _vehicleRepository.GetByIdAsync(vehicle.VehicleId);
-            if (existingVehicle == null)
-                throw new ArgumentException($"Vehicle with ID {vehicle.VehicleId} not found");
-
-            // Update the entity
-            await _vehicleRepository.UpdateAsync(vehicle);
-            return vehicle;
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -52,25 +33,73 @@ namespace EleVehicleDealer.BLL.Services
             return await _vehicleRepository.DeleteByIdAsync(id);
         }
 
-        public async Task<IEnumerable<EvdmsVehicle>> GetVehiclesByTypeAsync(string type)
-            => await _vehicleRepository.GetVehiclesByTypeAsync(type);
+        public async Task<IEnumerable<Vehicle>> GetAllAsync()
+        {
+            var vehicles = await _vehicleRepository.GetAllAsync();
+            return vehicles.Where(v => v.IsActive.GetValueOrDefault(false));
+        }
 
-        public async Task<IEnumerable<EvdmsVehicle>> GetAvailableVehiclesAsync()
-            => await _vehicleRepository.GetAvailableVehiclesAsync();
+        public async Task<Vehicle> GetByIdAsync(int id)
+        {
+            var vehicle = await _context.Vehicles.FindAsync(id);
+            if (vehicle == null || !vehicle.IsActive.GetValueOrDefault(false))
+                return null;
+            return vehicle;
+        }
 
-        public async Task<IEnumerable<EvdmsVehicle>> SearchVehiclesAsync(string searchTerm)
-            => await _vehicleRepository.SearchVehiclesAsync(searchTerm);
+        public async Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync()
+        {
+            return await _vehicleRepository.GetAvailableVehiclesAsync();
+        }
 
-        public async Task<bool> UpdateStockQuantityAsync(int vehicleId, int quantity)
-            => await _vehicleRepository.UpdateStockQuantityAsync(vehicleId, quantity);
+        public async Task<IEnumerable<Vehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice)
+        {
+            return await _vehicleRepository.GetVehiclesByPriceRangeAsync(minPrice, maxPrice);
+        }
 
-        public async Task<IEnumerable<EvdmsVehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice)
-            => await _vehicleRepository.GetVehiclesByPriceRangeAsync(minPrice, maxPrice);
+        public async Task<IEnumerable<Vehicle>> GetVehiclesByTypeAsync(string type)
+        {
+            return await _vehicleRepository.GetVehiclesByTypeAsync(type);
+        }
+
+        public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
+        {
+            return await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
+        }
 
         public async Task<int> GetTotalStockAsync()
-            => await _vehicleRepository.GetTotalStockAsync();
+        {
+            return await _vehicleRepository.GetTotalStockAsync();
+        }
 
-        public async Task<IEnumerable<EvdmsOrder>> GetVehicleOrderHistoryAsync(int vehicleId)
-            => await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
+        public async Task<IEnumerable<Vehicle>> SearchVehiclesAsync(string searchTerm)
+        {
+            return await _vehicleRepository.SearchVehiclesAsync(searchTerm);
+        }
+
+        public async Task<bool> UpdateStockQuantityAsync(int vehicleId, int quantity)
+        {
+            return await _vehicleRepository.UpdateStockAvailabilityAsync(vehicleId, quantity);
+        }
+
+        public async Task<Vehicle> UpdateAsync(Vehicle vehicle)
+        {
+            if (vehicle == null)
+                throw new ArgumentNullException(nameof(vehicle));
+
+            var existingVehicle = await _context.Vehicles.FindAsync(vehicle.VehicleId);
+            if (existingVehicle == null || !existingVehicle.IsActive.GetValueOrDefault(false))
+                return null;
+
+            existingVehicle.Model = vehicle.Model;
+            existingVehicle.Type = vehicle.Type;
+            existingVehicle.Color = vehicle.Color;
+            existingVehicle.Price = vehicle.Price;
+            existingVehicle.Availability = vehicle.Availability;
+            existingVehicle.StationId = vehicle.StationId;
+
+            await _context.SaveChangesAsync();
+            return existingVehicle;
+        }
     }
 }

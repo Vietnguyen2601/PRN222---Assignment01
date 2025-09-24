@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace EleVehicleDealer.DAL.Repositories.IRepository
 {
-    public interface IAccountRepository : IBaseRepository<EvdmsAccount>
+    public interface IAccountRepository : IGenericRepository<EvdmsAccount>
     {
         Task<EvdmsAccount?> GetByUsernameAsync(string username);
     }

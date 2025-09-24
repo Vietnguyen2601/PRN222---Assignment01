@@ -1,6 +1,7 @@
 ﻿using EleVehicleDealer.DAL.EntityModels;
 using EleVehicleDealer.DAL.Repositories.Base;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace EleVehicleDealer.DAL.Repositories.IRepository
 {
-    public interface IVehicleRepository : IBaseRepository<EvdmsVehicle>
+    public interface IVehicleRepository : IGenericRepository<EvdmsVehicle>
     {
         Task<EvdmsVehicle> CreateVehicleAsync(EvdmsVehicle vehicle);
         Task<IEnumerable<EvdmsVehicle>> GetVehiclesByTypeAsync(string type);
@@ -18,5 +19,6 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
         Task<IEnumerable<EvdmsVehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice);
         Task<int> GetTotalStockAsync();
         Task<IEnumerable<EvdmsOrder>> GetVehicleOrderHistoryAsync(int vehicleId);
+        Task<bool> DeleteByIdAsync(int id);
     }
 }

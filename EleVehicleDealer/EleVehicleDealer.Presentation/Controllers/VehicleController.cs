@@ -7,10 +7,11 @@ namespace EleVehicleDealer.Presentation.Controllers
     public class VehicleController : Controller
     {
         private readonly IVehicleService _vehicleService;
-
-        public VehicleController(IVehicleService vehicleService)
+        private readonly IStationService _stationService;
+        public VehicleController(IVehicleService vehicleService, IStationService stationService)
         {
             _vehicleService = vehicleService;
+            _stationService = stationService;
         }
 
         public async Task<IActionResult> Index(int? editId)
@@ -76,13 +77,26 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Home()
+        public async Task<IActionResult> Home(int? stationId)
         {
-            var vehicles = await _vehicleService.GetAllAsync();
+            var stations = await _stationService.GetAllStationsAsync();
+            var vehicles = stationId.HasValue && stationId.Value > 0
+                ? await _vehicleService.GetVehiclesByStationAsync(stationId.Value)
+                : await _vehicleService.GetAllVehicleAsync();
+
+            if (stations == null || !stations.Any())
+            {
+                TempData["Error"] = "No stations found.";
+            }
+
             if (vehicles == null || !vehicles.Any())
             {
                 TempData["Error"] = "No vehicles found.";
             }
+
+            ViewBag.Stations = stations;
+            ViewBag.SelectedStationId = stationId;
+
             return View(vehicles);
         }
 

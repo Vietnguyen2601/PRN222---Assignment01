@@ -14,5 +14,6 @@ namespace EleVehicleDealer.BLL.Interfaces
         Task<Vehicle> CreateAsync(Vehicle vehicle);
         Task<Vehicle> UpdateAsync(Vehicle vehicle);
         Task<bool> DeleteAsync(int id);
+        Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId);
     }
 }

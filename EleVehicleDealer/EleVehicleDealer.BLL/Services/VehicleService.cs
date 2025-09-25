@@ -101,5 +101,10 @@ namespace EleVehicleDealer.BLL.Services
             await _context.SaveChangesAsync();
             return existingVehicle;
         }
+
+        public async Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId)
+        {
+            return await _vehicleRepository.GetVehiclesByStationAsync(stationId);
+        }
     }
 }

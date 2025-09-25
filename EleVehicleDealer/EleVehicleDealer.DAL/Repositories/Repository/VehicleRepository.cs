@@ -125,5 +125,13 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId)
+        {
+            return await _context.Vehicles
+                .Where(v => v.StationId == stationId && (v.IsActive ?? false)) 
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

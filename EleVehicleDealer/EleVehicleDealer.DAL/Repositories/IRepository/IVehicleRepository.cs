@@ -14,5 +14,6 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
         Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync();
         Task<bool> DeleteByIdAsync(int id);
         Task<IEnumerable<Vehicle>> GetAllVehicleAsync();
+        Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId);
     }
 }

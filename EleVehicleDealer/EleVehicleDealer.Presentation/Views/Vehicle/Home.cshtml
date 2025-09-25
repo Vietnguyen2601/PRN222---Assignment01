@@ -1,33 +1,76 @@
 @model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
 @{
     var error = TempData["Error"] as string;
-    var vehicles = Model.ToList();
-    var totalVehicles = vehicles.Count;
-    ViewData["Title"] = "Home";
     var stations = ViewBag.Stations as IEnumerable<EleVehicleDealer.DAL.EntityModels.Station>;
     var selectedStationId = ViewBag.SelectedStationId as int? ?? 0;
 }
+
 @if (!string.IsNullOrEmpty(error))
 {
     <div class="alert alert-danger">@error</div>
 }
+
+<style>
+    .filter-container {
+        margin-bottom: 20px;
+    }
+
+    .filter-container label {
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    .filter-container select {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
+
+    .table {
+        margin-top: 20px;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .table th, .table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+    }
+
+    .table th {
+        background-color: #f4f4f4;
+        font-weight: bold;
+    }
+
+    .table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    .table tr:hover {
+        background-color: #f1f1f1;
+    }
+</style>
+
 <h2>Welcome to EleVehicleDealer</h2>
 
-<form method="get" asp-action="Home" asp-controller="Vehicle" class="mb-3">
-    <label for="stationId">Filter by Station:</label>
-    <select id="stationId" name="stationId" class="form-control" style="width:auto;display:inline-block;">
-        <option value="0" @(selectedStationId == 0 ? "selected" : "")>All</option>
-        @if (stations != null)
-        {
-            foreach (var station in stations)
+<form method="get" asp-action="Home" asp-controller="Vehicle" class="filter-container" id="stationForm">
+    <div>
+        <label for="stationId">Select Station:</label>
+        <select id="stationId" name="stationId" class="form-control" onchange="document.getElementById('stationForm').submit();">
+            <option value="0" @(selectedStationId == 0 ? "selected" : "")>All</option>
+            @if (stations != null)
             {
-                <option value="@station.StationId" @(selectedStationId == station.StationId ? "selected" : "")>
-                    @station.StationName
-                </option>
+                foreach (var station in stations)
+                {
+                    <option value="@station.StationId" @(selectedStationId == station.StationId ? "selected" : "")>
+                        @station.StationName
+                    </option>
+                }
             }
-        }
-    </select>
-    <button type="submit" class="btn btn-primary">Filter</button>
+        </select>
+    </div>
 </form>
 
 <table class="table">
@@ -37,7 +80,7 @@
             <th>Type</th>
             <th>Color</th>
             <th>Price</th>
-            <th>Availability</th>
+            <th>Quantity</th>
         </tr>
     </thead>
     <tbody>
@@ -48,7 +91,7 @@
                 <td>@v.Type</td>
                 <td>@v.Color</td>
                 <td>@v.Price</td>
-                <td>@(v.Availability.GetValueOrDefault(false) ? "Yes" : "No")</td>
+                <td>@v.Quantity</td>
             </tr>
         }
     </tbody>

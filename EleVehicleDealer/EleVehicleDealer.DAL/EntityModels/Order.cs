@@ -9,7 +9,7 @@ public partial class Order
 
     public int? CustomerId { get; set; }
 
-    public int? VehicleId { get; set; }
+    public int? InventoryId { get; set; }
 
     public DateTime? OrderDate { get; set; }
 
@@ -27,11 +27,9 @@ public partial class Order
 
     public virtual Account? Customer { get; set; }
 
+    public virtual Inventory? Inventory { get; set; }
+
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
-    public virtual Promotion? Promotion { get; set; }
-
     public virtual Account? Staff { get; set; }
-
-    public virtual Vehicle? Vehicle { get; set; }
 }

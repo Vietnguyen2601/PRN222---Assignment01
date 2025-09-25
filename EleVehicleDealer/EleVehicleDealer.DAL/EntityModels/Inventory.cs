@@ -17,6 +17,8 @@ public partial class Inventory
 
     public bool? IsActive { get; set; }
 
+    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+
     public virtual Station Station { get; set; } = null!;
 
     public virtual Vehicle Vehicle { get; set; } = null!;

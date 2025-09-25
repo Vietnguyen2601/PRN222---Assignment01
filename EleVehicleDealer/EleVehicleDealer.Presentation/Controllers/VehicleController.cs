@@ -15,7 +15,7 @@ namespace EleVehicleDealer.Presentation.Controllers
 
         public async Task<IActionResult> Index(int? editId)
         {
-            var vehicles = await _vehicleService.GetAllAsync();
+            var vehicles = await _vehicleService.GetAllVehicleAsync();
             if (editId.HasValue)
             {
                 var editVehicle = await _vehicleService.GetByIdAsync(editId.Value);
@@ -33,12 +33,13 @@ namespace EleVehicleDealer.Presentation.Controllers
             if (!ModelState.IsValid)
             {
                 ViewBag.EditVehicle = null;
-                return View("Index", await _vehicleService.GetAllAsync());
+                return View("Index", await _vehicleService.GetAllVehicleAsync());
             }
             if (bool.TryParse(Request.Form["Availability"], out bool availability))
             {
                 vehicle.Availability = availability;
             }
+            vehicle.IsActive = true;
             await _vehicleService.CreateAsync(vehicle);
             TempData["Message"] = "Vehicle created successfully!";
             return RedirectToAction(nameof(Index));

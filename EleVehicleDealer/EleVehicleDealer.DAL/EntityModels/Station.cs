@@ -22,6 +22,4 @@ public partial class Station
     public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
 
     public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
-
-    public virtual ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
 }

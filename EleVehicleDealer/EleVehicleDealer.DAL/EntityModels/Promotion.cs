@@ -21,7 +21,5 @@ public partial class Promotion
 
     public bool? IsActive { get; set; }
 
-    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-
     public virtual Station? Station { get; set; }
 }

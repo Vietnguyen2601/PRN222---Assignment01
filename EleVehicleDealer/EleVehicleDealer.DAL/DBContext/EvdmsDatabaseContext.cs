@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using EleVehicleDealer.DAL.EntityModels;
+﻿using EleVehicleDealer.DAL.EntityModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.EnvironmentVariables;
-
+using System;
+using System.Collections.Generic;
 
 namespace EleVehicleDealer.DAL.DBContext;
 
@@ -47,34 +45,45 @@ public partial class EvdmsDatabaseContext : DbContext
 
     public static string GetConnectionString(string connectionStringName)
     {
+        // Kiểm tra biến môi trường trước
         string envConnectionString = Environment.GetEnvironmentVariable($"ConnectionStrings__{connectionStringName}");
         if (!string.IsNullOrEmpty(envConnectionString))
         {
             return envConnectionString;
         }
 
+        // Nếu không có biến môi trường, đọc từ appsettings
         var config = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true)
             .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}.json", optional: true)
-            .AddEnvironmentVariables()
+            .AddEnvironmentVariables() // Thêm biến môi trường vào cấu hình
             .Build();
 
         string connectionString = config.GetConnectionString(connectionStringName);
         return connectionString;
     }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection"))
+            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.HasKey(e => e.AccountId).HasName("PK__Account__46A222CD1B92F857");
+            entity.HasKey(e => e.AccountId).HasName("PK__Account__46A222CD64C1F646");
 
             entity.ToTable("Account");
 
-            entity.HasIndex(e => e.Email, "UQ__Account__AB6E6164D3B8C927").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Account__AB6E616476805293").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__Account__F3DBC572CF06C86A").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__Account__F3DBC572C9CC8844").IsUnique();
 
             entity.Property(e => e.AccountId).HasColumnName("account_id");
             entity.Property(e => e.ContactNumber)
@@ -100,7 +109,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<AccountRole>(entity =>
         {
-            entity.HasKey(e => e.AccountRoleId).HasName("PK__Account___9E0E1831D76DD11E");
+            entity.HasKey(e => e.AccountRoleId).HasName("PK__Account___9E0E18317CD1482B");
 
             entity.ToTable("Account_Role");
 
@@ -122,7 +131,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Contract>(entity =>
         {
-            entity.HasKey(e => e.ContractId).HasName("PK__Contract__F8D66423E869A9D5");
+            entity.HasKey(e => e.ContractId).HasName("PK__Contract__F8D664238DA64245");
 
             entity.ToTable("Contract");
 
@@ -154,7 +163,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.FeedbackId).HasName("PK__Feedback__7A6B2B8CE9D664A4");
+            entity.HasKey(e => e.FeedbackId).HasName("PK__Feedback__7A6B2B8CEA668898");
 
             entity.ToTable("Feedback");
 
@@ -184,7 +193,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Inventory>(entity =>
         {
-            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__B59ACC4975491CB5");
+            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__B59ACC49556AE518");
 
             entity.ToTable("Inventory");
 
@@ -211,10 +220,11 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Order>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__Orders__46596229CC5DCBD2");
+            entity.HasKey(e => e.OrderId).HasName("PK__Orders__465962291DF5D063");
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
@@ -231,30 +241,24 @@ public partial class EvdmsDatabaseContext : DbContext
             entity.Property(e => e.TotalPrice)
                 .HasColumnType("decimal(12, 2)")
                 .HasColumnName("total_price");
-            entity.Property(e => e.VehicleId).HasColumnName("vehicle_id");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.OrderCustomers)
                 .HasForeignKey(d => d.CustomerId)
                 .HasConstraintName("FK__Orders__customer_id");
 
-            entity.HasOne(d => d.Promotion).WithMany(p => p.Orders)
-                .HasForeignKey(d => d.PromotionId)
+            entity.HasOne(d => d.Inventory).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.InventoryId)
                 .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("FK__Orders__promotion_id");
+                .HasConstraintName("FK__Orders__inventory_id");
 
             entity.HasOne(d => d.Staff).WithMany(p => p.OrderStaffs)
                 .HasForeignKey(d => d.StaffId)
                 .HasConstraintName("FK__Orders__staff_id");
-
-            entity.HasOne(d => d.Vehicle).WithMany(p => p.Orders)
-                .HasForeignKey(d => d.VehicleId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("FK__Orders__vehicle_id");
         });
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__ED1FC9EAEEE1EF87");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__ED1FC9EADBAF1A5C");
 
             entity.ToTable("Payment");
 
@@ -286,11 +290,11 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Promotion>(entity =>
         {
-            entity.HasKey(e => e.PromotionId).HasName("PK__Promotio__2CB9556B95130A2C");
+            entity.HasKey(e => e.PromotionId).HasName("PK__Promotio__2CB9556BDE4D2648");
 
             entity.ToTable("Promotion");
 
-            entity.HasIndex(e => e.PromoCode, "UQ__Promotio__C07E231542EEFE63").IsUnique();
+            entity.HasIndex(e => e.PromoCode, "UQ__Promotio__C07E231596579479").IsUnique();
 
             entity.Property(e => e.PromotionId).HasColumnName("promotion_id");
             entity.Property(e => e.ApplicableTo)
@@ -321,7 +325,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Report>(entity =>
         {
-            entity.HasKey(e => e.ReportId).HasName("PK__Report__779B7C586281651D");
+            entity.HasKey(e => e.ReportId).HasName("PK__Report__779B7C584A53080A");
 
             entity.ToTable("Report");
 
@@ -346,11 +350,11 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC1FF61249");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CCFF02FAAB");
 
             entity.ToTable("Role");
 
-            entity.HasIndex(e => e.RoleName, "UQ__Role__783254B1FC1ED54C").IsUnique();
+            entity.HasIndex(e => e.RoleName, "UQ__Role__783254B1B9D9446F").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.IsActive)
@@ -363,7 +367,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<StaffRevenue>(entity =>
         {
-            entity.HasKey(e => e.StaffRevenueId).HasName("PK__Staff_Re__62C349F1C422EB9D");
+            entity.HasKey(e => e.StaffRevenueId).HasName("PK__Staff_Re__62C349F1E9E28251");
 
             entity.ToTable("Staff_Revenue");
 
@@ -390,7 +394,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Station>(entity =>
         {
-            entity.HasKey(e => e.StationId).HasName("PK__Station__44B370E91A93ADD4");
+            entity.HasKey(e => e.StationId).HasName("PK__Station__44B370E93BBB0D78");
 
             entity.ToTable("Station");
 
@@ -416,7 +420,7 @@ public partial class EvdmsDatabaseContext : DbContext
 
         modelBuilder.Entity<Vehicle>(entity =>
         {
-            entity.HasKey(e => e.VehicleId).HasName("PK__Vehicle__F2947BC16CE8F83B");
+            entity.HasKey(e => e.VehicleId).HasName("PK__Vehicle__F2947BC1AFA706E2");
 
             entity.ToTable("Vehicle");
 
@@ -434,15 +438,11 @@ public partial class EvdmsDatabaseContext : DbContext
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(12, 2)")
                 .HasColumnName("price");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.StationId).HasColumnName("station_id");
             entity.Property(e => e.Type)
                 .HasMaxLength(255)
                 .HasColumnName("type");
-
-            entity.HasOne(d => d.Station).WithMany(p => p.Vehicles)
-                .HasForeignKey(d => d.StationId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("FK__Vehicle__station_id");
         });
 
         OnModelCreatingPartial(modelBuilder);

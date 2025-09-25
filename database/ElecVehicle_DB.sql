@@ -1,4 +1,9 @@
-﻿-- Tạo hoặc sử dụng database
+﻿ALTER DATABASE evdms_database
+SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+
+DROP DATABASE evdms_database;
+
+-- Tạo hoặc sử dụng database
 IF DB_ID('vehicle_management_database') IS NULL
     CREATE DATABASE evdms_database;
 GO
@@ -94,7 +99,7 @@ BEGIN TRY
         availability BIT NOT NULL,
         station_id INT,
         is_active BIT DEFAULT 1,
-        CONSTRAINT FK__Vehicle__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE SET NULL
+        quantity INT 
     );
     PRINT 'Table [Vehicle] created.';
 
@@ -129,7 +134,7 @@ BEGIN TRY
     CREATE TABLE [Orders] (
         order_id INT IDENTITY(1,1) PRIMARY KEY,
         customer_id INT,
-        vehicle_id INT,
+        inventory_id INT,
         order_date DATETIME DEFAULT GETDATE(),
         total_price DECIMAL(12, 2) NOT NULL,
         status NVARCHAR(255) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')),
@@ -137,8 +142,7 @@ BEGIN TRY
         staff_id INT,
         is_active BIT DEFAULT 1,
         CONSTRAINT FK__Orders__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE NO ACTION,
-        CONSTRAINT FK__Orders__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE SET NULL,
-        CONSTRAINT FK__Orders__promotion_id FOREIGN KEY (promotion_id) REFERENCES [Promotion](promotion_id) ON DELETE SET NULL,
+        CONSTRAINT FK__Orders__inventory_id FOREIGN KEY (inventory_id) REFERENCES [Inventory](inventory_id) ON DELETE SET NULL,
         CONSTRAINT FK__Orders__staff_id FOREIGN KEY (staff_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
     );
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Orders')
@@ -239,7 +243,7 @@ GO
     ('HCMC Station', '456 HCMC St', '0902223334', 1);
 
     -- Vehicle
-    INSERT INTO [Vehicle] (model, type, color, price, availability, station_id) VALUES
+    INSERT INTO [Vehicle] (model, type, color, price, availability, quantity) VALUES
     ('Model X', 'Sedan', 'Black', 50000.00, 1, 1),
     ('Model Y', 'SUV', 'White', 60000.00, 1, 2);
 
@@ -254,7 +258,7 @@ GO
     ('YEAR_END', 15.00, '2025-12-01', '2025-12-31', 'SUV', 2);
 
     -- Orders
-    INSERT INTO [Orders] (customer_id, vehicle_id, total_price, status, promotion_id, staff_id) VALUES
+    INSERT INTO [Orders] (customer_id, inventory_id, total_price, status, promotion_id, staff_id) VALUES
     (3, 1, 45000.00, 'Shipped', 1, 2),
     (4, 2, 51000.00, 'Pending', 2, 2);
 

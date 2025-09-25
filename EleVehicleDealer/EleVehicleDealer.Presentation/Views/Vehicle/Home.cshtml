@@ -1,0 +1,55 @@
+@model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
+@{
+    var error = TempData["Error"] as string;
+    var vehicles = Model.ToList();
+    var totalVehicles = vehicles.Count;
+    ViewData["Title"] = "Home";
+    var stations = ViewBag.Stations as IEnumerable<EleVehicleDealer.DAL.EntityModels.Station>;
+    var selectedStationId = ViewBag.SelectedStationId as int? ?? 0;
+}
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+<h2>Welcome to EleVehicleDealer</h2>
+
+<form method="get" asp-action="Home" asp-controller="Vehicle" class="mb-3">
+    <label for="stationId">Filter by Station:</label>
+    <select id="stationId" name="stationId" class="form-control" style="width:auto;display:inline-block;">
+        <option value="0" @(selectedStationId == 0 ? "selected" : "")>All</option>
+        @if (stations != null)
+        {
+            foreach (var station in stations)
+            {
+                <option value="@station.StationId" @(selectedStationId == station.StationId ? "selected" : "")>
+                    @station.StationName
+                </option>
+            }
+        }
+    </select>
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Type</th>
+            <th>Color</th>
+            <th>Price</th>
+            <th>Availability</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var v in Model)
+        {
+            <tr>
+                <td>@v.Model</td>
+                <td>@v.Type</td>
+                <td>@v.Color</td>
+                <td>@v.Price</td>
+                <td>@(v.Availability.GetValueOrDefault(false) ? "Yes" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>

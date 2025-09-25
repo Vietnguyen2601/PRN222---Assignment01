@@ -73,6 +73,18 @@ namespace EleVehicleDealer.Presentation.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Home()
+        {
+            var vehicles = await _vehicleService.GetAllAsync();
+            if (vehicles == null || !vehicles.Any())
+            {
+                TempData["Error"] = "No vehicles found.";
+            }
+            return View(vehicles);
+        }
+
     }
 }
 

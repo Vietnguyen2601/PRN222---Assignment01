@@ -2,7 +2,7 @@
 @model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
 @{
     var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.DAL.EntityModels.Vehicle;
-    var isAvailable = editVehicle?.Availability.GetValueOrDefault(false) ?? false;
+    var isAvailable = editVehicle?.Availability ?? false;
     var message = TempData["Message"] as string;
     var error = TempData["Error"] as string;
 }
@@ -85,7 +85,7 @@
                 <td>@v.Type</td>
                 <td>@v.Color</td>
                 <td>@v.Price</td>
-                <td>@(v.Availability.GetValueOrDefault(false) ? "Yes" : "No")</td>
+                <td>@(v.Availability ? "Yes" : "No")</td>
                 <td>@v.StationId</td>
                 <td>
                     <form action="/Vehicle/Delete" method="post" style="display:inline">

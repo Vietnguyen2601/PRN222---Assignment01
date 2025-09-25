@@ -9,7 +9,7 @@ namespace EleVehicleDealer.BLL.Interfaces
 {
     public interface IVehicleService
     {
-        Task<IEnumerable<Vehicle>> GetAllAsync();
+        Task<IEnumerable<Vehicle>> GetAllVehicleAsync();
         Task<Vehicle> GetByIdAsync(int id);
         Task<Vehicle> CreateAsync(Vehicle vehicle);
         Task<Vehicle> UpdateAsync(Vehicle vehicle);

@@ -57,10 +57,18 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Vehicle>> GetAllVehicleAsync()
+        {
+            return await _context.Vehicles
+                .Where(v => v.IsActive ?? false)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync()
         {
             return await _context.Vehicles
-                .Where(v => v.Availability.GetValueOrDefault(false) && v.IsActive.GetValueOrDefault(false))
+                .Where(v => v.IsActive ?? false)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -103,22 +111,6 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
 
             return await _context.Vehicles
                 .Where(v => v.Price >= minPrice && v.Price <= maxPrice && v.IsActive.GetValueOrDefault(false))
-                .AsNoTracking()
-                .ToListAsync();
-        }
-
-        public async Task<int> GetTotalStockAsync()
-        {
-            return await _context.Vehicles
-                .Where(v => v.IsActive.GetValueOrDefault(false) && v.Availability.GetValueOrDefault(false))
-                .CountAsync();
-        }
-
-        public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
-        {
-            return await _context.Orders
-                .Where(o => o.VehicleId == vehicleId && o.IsActive.GetValueOrDefault(false))
-                .OrderByDescending(o => o.OrderDate)
                 .AsNoTracking()
                 .ToListAsync();
         }

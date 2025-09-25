@@ -25,6 +25,7 @@ namespace EleVehicleDealer.BLL.Services
 
         public async Task<Vehicle> CreateAsync(Vehicle vehicle)
         {
+            vehicle.IsActive = true;
             return await _vehicleRepository.CreateVehicleAsync(vehicle);
         }
 
@@ -33,10 +34,9 @@ namespace EleVehicleDealer.BLL.Services
             return await _vehicleRepository.DeleteByIdAsync(id);
         }
 
-        public async Task<IEnumerable<Vehicle>> GetAllAsync()
+        public async Task<IEnumerable<Vehicle>> GetAllVehicleAsync()
         {
-            var vehicles = await _vehicleRepository.GetAllAsync();
-            return vehicles.Where(v => v.IsActive.GetValueOrDefault(false));
+          return await _vehicleRepository.GetAllVehicleAsync();
         }
 
         public async Task<Vehicle> GetByIdAsync(int id)
@@ -62,15 +62,15 @@ namespace EleVehicleDealer.BLL.Services
             return await _vehicleRepository.GetVehiclesByTypeAsync(type);
         }
 
-        public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
-        {
-            return await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
-        }
+        //public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
+        //{
+        //    return await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
+        //}
 
-        public async Task<int> GetTotalStockAsync()
-        {
-            return await _vehicleRepository.GetTotalStockAsync();
-        }
+        //public async Task<int> GetTotalStockAsync()
+        //{
+        //    return await _vehicleRepository.GetTotalStockAsync();
+        //}
 
         public async Task<IEnumerable<Vehicle>> SearchVehiclesAsync(string searchTerm)
         {
@@ -88,7 +88,7 @@ namespace EleVehicleDealer.BLL.Services
                 throw new ArgumentNullException(nameof(vehicle));
 
             var existingVehicle = await _context.Vehicles.FindAsync(vehicle.VehicleId);
-            if (existingVehicle == null || !existingVehicle.IsActive.GetValueOrDefault(false))
+            if (existingVehicle == null || !(existingVehicle.IsActive ?? false))
                 return null;
 
             existingVehicle.Model = vehicle.Model;

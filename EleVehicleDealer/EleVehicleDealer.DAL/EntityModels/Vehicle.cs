@@ -15,17 +15,15 @@ public partial class Vehicle
 
     public decimal Price { get; set; }
 
-    public bool? Availability { get; set; }
+    public bool Availability { get; set; }
 
     public int? StationId { get; set; }
 
     public bool? IsActive { get; set; }
 
+    public int? Quantity { get; set; }
+
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
     public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
-
-    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-
-    public virtual Station? Station { get; set; }
 }

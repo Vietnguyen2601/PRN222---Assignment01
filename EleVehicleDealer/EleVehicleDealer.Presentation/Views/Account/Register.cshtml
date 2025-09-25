@@ -1,16 +1,14 @@
 ﻿@{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Register";
 }
 
-@if (TempData["Success"] != null)
+@if (ViewBag.Error != null)
 {
-    <div class="alert alert-success text-center">
-        @TempData["Success"]
-    </div>
+    <div class="alert alert-danger">@ViewBag.Error</div>
 }
 
 <style>
-    .login-container {
+    .register-container {
         max-width: 400px;
         margin: 60px auto;
         padding: 25px;
@@ -21,19 +19,19 @@
         font-family: Arial, sans-serif;
     }
 
-        .login-container h2 {
+        .register-container h2 {
             text-align: center;
             margin-bottom: 20px;
             color: #333;
         }
 
-        .login-container label {
+        .register-container label {
             display: block;
             margin-bottom: 6px;
             font-weight: bold;
         }
 
-        .login-container input {
+        .register-container input {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -41,10 +39,10 @@
             border-radius: 6px;
         }
 
-        .login-container button {
+        .register-container button {
             width: 100%;
             padding: 10px;
-            background: #007bff;
+            background: #28a745;
             color: #fff;
             font-weight: bold;
             border: none;
@@ -53,35 +51,35 @@
             transition: background 0.3s ease;
         }
 
-            .login-container button:hover {
-                background: #0056b3;
+            .register-container button:hover {
+                background: #218838;
             }
 
-        .login-container .error-message {
+        .register-container .error-message {
             color: red;
             text-align: center;
             margin-top: 10px;
         }
 
-        .login-container .register-link {
+        .register-container .login-link {
             margin-top: 15px;
             text-align: center;
         }
 
-            .login-container .register-link a {
+            .register-container .login-link a {
                 color: #007bff;
                 text-decoration: none;
             }
 
-                .login-container .register-link a:hover {
+                .register-container .login-link a:hover {
                     text-decoration: underline;
                 }
 </style>
 
-<div class="login-container">
-    <h2>Đăng nhập</h2>
+<div class="register-container">
+    <h2>Tạo tài khoản</h2>
 
-    <form asp-action="Login" method="post">
+    <form asp-action="Register" method="post">
         <div>
             <label for="username">Tên đăng nhập</label>
             <input type="text" name="username" placeholder="Nhập tên đăng nhập" required />
@@ -92,7 +90,17 @@
             <input type="password" name="password" placeholder="Nhập mật khẩu" required />
         </div>
 
-        <button type="submit">Đăng nhập</button>
+        <div>
+            <label for="email">Email</label>
+            <input type="email" name="email" placeholder="Nhập email" required />
+        </div>
+
+        <div>
+            <label for="contactNumber">Số điện thoại</label>
+            <input type="text" name="contactNumber" placeholder="Nhập số điện thoại" />
+        </div>
+
+        <button type="submit">Đăng ký</button>
     </form>
 
     @if (ViewBag.Error != null)
@@ -100,8 +108,8 @@
         <p class="error-message">@ViewBag.Error</p>
     }
 
-    <div class="register-link">
-        Bạn chưa có tài khoản?
-        <a href="/Account/Register">Nhấn vào đây</a>
+    <div class="login-link">
+        Đã có tài khoản?
+        <a href="/Account/Login">Nhấn vào đây</a>
     </div>
 </div>

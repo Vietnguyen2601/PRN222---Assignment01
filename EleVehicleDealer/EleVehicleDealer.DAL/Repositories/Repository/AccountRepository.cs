@@ -29,5 +29,21 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Username == username);
         }
+
+        public async Task<bool> ExistsAsync(string username)
+        {
+            return await _context.Accounts.AnyAsync(a => a.Username == username);
+        }
+
+        public async Task<bool> ExistsEmailAsync(string email)
+        {
+            return await _context.Accounts.AnyAsync(a => a.Email == email);
+        }
+
+        public async Task AddAsync(Account account)
+        {
+            _context.Accounts.Add(account);
+            await _context.SaveChangesAsync();
+        }
     }
 }

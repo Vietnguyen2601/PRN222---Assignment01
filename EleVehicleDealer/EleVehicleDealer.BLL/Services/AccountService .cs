@@ -23,11 +23,26 @@ namespace EleVehicleDealer.BLL.Services
             var account = await _accountRepository.GetByUsernameAsync(username);
             if (account == null) return null;
 
-            // ⚠️ Ở đây đang so sánh plain text password,
+            //  Ở đây đang so sánh plain text password,
             // nếu bạn muốn bảo mật thì nên hash (HMACSHA512 / BCrypt)
             if (account.Password != password) return null;
 
             return account;
+        }
+
+        public async Task<bool> ExistsAsync(string username)
+        {
+            return await _accountRepository.ExistsAsync(username);
+        }
+
+        public async Task<bool> ExistsEmailAsync(string email)
+        {
+            return await _accountRepository.ExistsEmailAsync(email);
+        }
+
+        public async Task RegisterAsync(Account account)
+        {
+            await _accountRepository.AddAsync(account);
         }
     }
 }

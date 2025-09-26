@@ -35,7 +35,6 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             try
             {
                 vehicle.IsActive = true;
-                vehicle.Availability = true;
                 await _context.Vehicles.AddAsync(vehicle);
                 await _context.SaveChangesAsync();
                 return vehicle;
@@ -52,7 +51,7 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
                 throw new ArgumentException("Vehicle type cannot be empty");
 
             return await _context.Vehicles
-                .Where(v => v.Type == type && v.IsActive.GetValueOrDefault(false))
+                .Where(v => v.Type == type && v.IsActive)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -60,7 +59,7 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<IEnumerable<Vehicle>> GetAllVehicleAsync()
         {
             return await _context.Vehicles
-                .Where(v => v.IsActive ?? false)
+                .Where(v => v.IsActive)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -68,7 +67,7 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync()
         {
             return await _context.Vehicles
-                .Where(v => v.IsActive ?? false)
+                .Where(v => v.IsActive)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -77,29 +76,20 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
                 return await _context.Vehicles
-                    .Where(v => v.IsActive.GetValueOrDefault(false))
+                    .Where(v => v.IsActive)
                     .AsNoTracking()
                     .ToListAsync();
 
             return await _context.Vehicles
                 .Where(v => (v.Model.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                           v.Type.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) && v.IsActive.GetValueOrDefault(false))
+                           v.Type.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) && v.IsActive)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
         public async Task<bool> UpdateStockAvailabilityAsync(int vehicleId, int quantity)
         {
-            if (quantity < 0)
-                throw new ArgumentException("Quantity cannot be negative");
-
-            var vehicle = await _context.Vehicles.FindAsync(vehicleId);
-            if (vehicle == null || !vehicle.IsActive.GetValueOrDefault(false))
-                return false;
-
-            vehicle.Availability = quantity > 0;
-            await _context.SaveChangesAsync();
-            return true;
+            throw new NotImplementedException("UpdateStockAvailabilityAsync is not applicable without Availability. Please redefine the logic if needed.");
         }
 
         public async Task<IEnumerable<Vehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice)
@@ -110,7 +100,7 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
                 throw new ArgumentException("Minimum price cannot exceed maximum price");
 
             return await _context.Vehicles
-                .Where(v => v.Price >= minPrice && v.Price <= maxPrice && v.IsActive.GetValueOrDefault(false))
+                .Where(v => v.Price >= minPrice && v.Price <= maxPrice && v.IsActive)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -129,7 +119,23 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId)
         {
             return await _context.Vehicles
-                .Where(v => v.StationId == stationId && (v.IsActive ?? false)) 
+                .Where(v => v.StationCars.Any(sc => sc.StationId == stationId) && v.IsActive)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<int> GetTotalStockAsync()
+        {
+            return await _context.Vehicles
+                .Where(v => v.IsActive)
+                .CountAsync();
+        }
+
+        public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
+        {
+            return await _context.Orders
+                .Where(o => o.IsActive) 
+                .OrderByDescending(o => o.OrderDate)
                 .AsNoTracking()
                 .ToListAsync();
         }

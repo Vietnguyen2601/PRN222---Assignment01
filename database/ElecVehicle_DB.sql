@@ -1,41 +1,31 @@
-﻿ALTER DATABASE evdms_database
+﻿-- Drop and recreate the database
+ALTER DATABASE evdms_database
 SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
 
-DROP DATABASE evdms_database;
+DROP DATABASE IF EXISTS evdms_database;
+GO
 
--- Tạo hoặc sử dụng database
-IF DB_ID('vehicle_management_database') IS NULL
-    CREATE DATABASE evdms_database;
+CREATE DATABASE evdms_database;
 GO
 USE evdms_database;
 GO
 
--- Xóa các foreign key constraints và bảng evdms_ cũ
+-- Drop existing tables and constraints
 BEGIN TRY
-    -- Xóa foreign key constraints động cho cả bảng cũ và mới
     DECLARE @sql NVARCHAR(MAX) = '';
     SELECT @sql += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' + 
                    QUOTENAME(OBJECT_NAME(parent_object_id)) + 
                    ' DROP CONSTRAINT ' + QUOTENAME(name) + ';'
     FROM sys.foreign_keys
     WHERE parent_object_id IN (SELECT object_id FROM sys.tables 
-        WHERE name IN ('Account', 'Role', 'Account_Role', 'Station', 'Vehicle', 'Inventory', 
-                       'Promotion', 'Orders', 'Contract', 'Payment', 'Feedback', 'Report', 
-                       'Staff_Revenue', 'evdms_reports', 'evdms_payments', 'evdms_contracts', 
-                       'evdms_quotes', 'evdms_vehicle_bookings', 'evdms_test_drives', 
-                       'evdms_feedback', 'evdms_promotions', 'evdms_orders', 
-                       'evdms_vehicle_features', 'evdms_vehicles', 'evdms_customers', 
-                       'evdms_accounts', 'evdms_users', 'evdms_roles'));
+        WHERE name IN ('Account', 'Role', 'Account_Role', 'Station', 'Vehicle', 'Station_Car', 
+                       'Promotion', 'Schedule', 'Order', 'Contract', 'Payment', 'Feedback', 
+                       'Report', 'Staff_Revenue'));
     IF @sql != ''
         EXEC sp_executesql @sql;
 
-    -- Xóa các bảng evdms_ cũ và bảng mới
-    DROP TABLE IF EXISTS evdms_reports, evdms_payments, evdms_contracts, evdms_quotes, 
-        evdms_vehicle_bookings, evdms_test_drives, evdms_feedback, evdms_promotions, 
-        evdms_orders, evdms_vehicle_features, evdms_vehicles, evdms_customers, 
-        evdms_accounts, evdms_users, evdms_roles,
-        Account, Role, Account_Role, Station, Vehicle, Inventory, 
-        Promotion, Orders, Contract, Payment, Feedback, Report, Staff_Revenue;
+    DROP TABLE IF EXISTS Account, Role, Account_Role, Station, Vehicle, Station_Car, 
+        Promotion, Schedule, [Order], Contract, Payment, Feedback, Report, Staff_Revenue;
 
     PRINT 'All existing tables and constraints dropped.';
 END TRY
@@ -44,25 +34,28 @@ BEGIN CATCH
 END CATCH
 GO
 
--- Tạo bảng mới
+-- Create tables
 BEGIN TRY
     -- Role
     CREATE TABLE [Role] (
         role_id INT IDENTITY(1,1) PRIMARY KEY,
-        role_name NVARCHAR(255) NOT NULL UNIQUE,
-        is_active BIT DEFAULT 1
+        role_name NVARCHAR(255) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1
     );
     PRINT 'Table [Role] created.';
 
     -- Account
     CREATE TABLE [Account] (
         account_id INT IDENTITY(1,1) PRIMARY KEY,
-        username NVARCHAR(255) NOT NULL UNIQUE,
+        username NVARCHAR(255) NOT NULL,
         password NVARCHAR(255) NOT NULL,
-        email NVARCHAR(255) NOT NULL UNIQUE,
+        email NVARCHAR(255) NOT NULL,
         contact_number NVARCHAR(255),
-        created_at DATETIME DEFAULT GETDATE(),
-        is_active BIT DEFAULT 1
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1
     );
     PRINT 'Table [Account] created.';
 
@@ -71,7 +64,9 @@ BEGIN TRY
         account_role_id INT IDENTITY(1,1) PRIMARY KEY,
         account_id INT NOT NULL,
         role_id INT NOT NULL,
-        is_active BIT DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
         CONSTRAINT FK__Account_Role__account_id FOREIGN KEY (account_id) REFERENCES [Account](account_id) ON DELETE CASCADE,
         CONSTRAINT FK__Account_Role__role_id FOREIGN KEY (role_id) REFERENCES [Role](role_id) ON DELETE CASCADE
     );
@@ -81,11 +76,11 @@ BEGIN TRY
     CREATE TABLE [Station] (
         station_id INT IDENTITY(1,1) PRIMARY KEY,
         station_name NVARCHAR(255) NOT NULL,
-        location NVARCHAR(255),
+        location NVARCHAR(255) NOT NULL,
         contact_number NVARCHAR(255),
-        admin_id INT,
-        is_active BIT DEFAULT 1,
-        CONSTRAINT FK__Station__admin_id FOREIGN KEY (admin_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1
     );
     PRINT 'Table [Station] created.';
 
@@ -93,73 +88,92 @@ BEGIN TRY
     CREATE TABLE [Vehicle] (
         vehicle_id INT IDENTITY(1,1) PRIMARY KEY,
         model NVARCHAR(255) NOT NULL,
-        type NVARCHAR(255),
+        type NVARCHAR(255) NOT NULL,
         color NVARCHAR(255),
-        price DECIMAL(12, 2) NOT NULL,
-        availability BIT NOT NULL,
-        station_id INT,
-        is_active BIT DEFAULT 1,
-        quantity INT 
+        price DECIMAL(12,2) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1
     );
     PRINT 'Table [Vehicle] created.';
 
-    -- Inventory
-    CREATE TABLE [Inventory] (
-        inventory_id INT IDENTITY(1,1) PRIMARY KEY,
+    -- Station_Car
+    CREATE TABLE [Station_Car] (
+        station_car_id INT IDENTITY(1,1) PRIMARY KEY,
         vehicle_id INT NOT NULL,
         station_id INT NOT NULL,
         quantity INT NOT NULL,
-        last_updated DATETIME DEFAULT GETDATE(),
-        is_active BIT DEFAULT 1,
-        CONSTRAINT FK__Inventory__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE CASCADE,
-        CONSTRAINT FK__Inventory__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE CASCADE
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
+        CONSTRAINT FK__Station_Car__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE CASCADE,
+        CONSTRAINT FK__Station_Car__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE CASCADE
     );
-    PRINT 'Table [Inventory] created.';
+    PRINT 'Table [Station_Car] created.';
 
     -- Promotion
     CREATE TABLE [Promotion] (
         promotion_id INT IDENTITY(1,1) PRIMARY KEY,
-        promo_code NVARCHAR(255) NOT NULL UNIQUE,
-        discount_percentage DECIMAL(5, 2),
+        promo_code NVARCHAR(255) NOT NULL,
+        discount_percentage DECIMAL(5,2) NOT NULL,
         start_date DATETIME NOT NULL,
         end_date DATETIME NOT NULL,
         applicable_to NVARCHAR(255),
         station_id INT,
-        is_active BIT DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
         CONSTRAINT FK__Promotion__station_id FOREIGN KEY (station_id) REFERENCES [Station](station_id) ON DELETE SET NULL
     );
     PRINT 'Table [Promotion] created.';
 
-    -- Orders
-    CREATE TABLE [Orders] (
-        order_id INT IDENTITY(1,1) PRIMARY KEY,
-        customer_id INT,
-        inventory_id INT,
-        order_date DATETIME DEFAULT GETDATE(),
-        total_price DECIMAL(12, 2) NOT NULL,
-        status NVARCHAR(255) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')),
-        promotion_id INT,
-        staff_id INT,
-        is_active BIT DEFAULT 1,
-        CONSTRAINT FK__Orders__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE NO ACTION,
-        CONSTRAINT FK__Orders__inventory_id FOREIGN KEY (inventory_id) REFERENCES [Inventory](inventory_id) ON DELETE SET NULL,
-        CONSTRAINT FK__Orders__staff_id FOREIGN KEY (staff_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
+    -- Schedule
+    CREATE TABLE [Schedule] (
+        schedule_id INT IDENTITY(1,1) PRIMARY KEY,
+        customer_id INT NOT NULL,
+        station_car_id INT NOT NULL,
+        status NVARCHAR(255) NOT NULL,
+        schedule_time DATETIME NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
+        CONSTRAINT FK__Schedule__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE CASCADE,
+        CONSTRAINT FK__Schedule__station_car_id FOREIGN KEY (station_car_id) REFERENCES [Station_Car](station_car_id) ON DELETE CASCADE
     );
-    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Orders')
-        PRINT 'Table [Orders] created successfully.';
-    ELSE
-        RAISERROR ('Table [Orders] creation failed.', 16, 1);
+    PRINT 'Table [Schedule] created.';
+
+    -- Order
+    CREATE TABLE [Order] (
+        order_id INT IDENTITY(1,1) PRIMARY KEY,
+        customer_id INT NOT NULL,
+        station_car_id INT NOT NULL,
+        order_date DATETIME NOT NULL DEFAULT GETDATE(),
+        total_price DECIMAL(12,2) NOT NULL,
+        status NVARCHAR(255) NOT NULL,
+        promotion_id INT,
+        staff_id INT NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
+        CONSTRAINT FK__Order__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE NO ACTION,
+        CONSTRAINT FK__Order__station_car_id FOREIGN KEY (station_car_id) REFERENCES [Station_Car](station_car_id) ON DELETE NO ACTION,
+        CONSTRAINT FK__Order__promotion_id FOREIGN KEY (promotion_id) REFERENCES [Promotion](promotion_id) ON DELETE SET NULL,
+        CONSTRAINT FK__Order__staff_id FOREIGN KEY (staff_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
+    );
+    PRINT 'Table [Order] created.';
 
     -- Contract
     CREATE TABLE [Contract] (
         contract_id INT IDENTITY(1,1) PRIMARY KEY,
         order_id INT NOT NULL,
-        contract_date DATETIME DEFAULT GETDATE(),
-        terms TEXT,
+        contract_date DATETIME NOT NULL DEFAULT GETDATE(),
+        terms TEXT NOT NULL,
         signature NVARCHAR(255),
-        status NVARCHAR(255) NOT NULL DEFAULT 'Draft' CHECK (status IN ('Draft', 'Signed', 'Terminated')),
-        is_active BIT DEFAULT 1,
-        CONSTRAINT FK__Contract__order_id FOREIGN KEY (order_id) REFERENCES [Orders](order_id) ON DELETE NO ACTION
+        status NVARCHAR(255) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
+        CONSTRAINT FK__Contract__order_id FOREIGN KEY (order_id) REFERENCES [Order](order_id) ON DELETE NO ACTION
     );
     PRINT 'Table [Contract] created.';
 
@@ -167,12 +181,14 @@ BEGIN TRY
     CREATE TABLE [Payment] (
         payment_id INT IDENTITY(1,1) PRIMARY KEY,
         order_id INT NOT NULL,
-        amount DECIMAL(12, 2) NOT NULL,
-        payment_date DATETIME DEFAULT GETDATE(),
-        payment_method NVARCHAR(255) NOT NULL CHECK (payment_method IN ('Cash', 'Credit Card', 'Bank Transfer', 'Installment')),
-        status NVARCHAR(255) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Completed', 'Failed')),
-        is_active BIT DEFAULT 1,
-        CONSTRAINT FK__Payment__order_id FOREIGN KEY (order_id) REFERENCES [Orders](order_id) ON DELETE NO ACTION
+        amount DECIMAL(12,2) NOT NULL,
+        payment_date DATETIME NOT NULL DEFAULT GETDATE(),
+        payment_method NVARCHAR(255) NOT NULL,
+        status NVARCHAR(255) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
+        CONSTRAINT FK__Payment__order_id FOREIGN KEY (order_id) REFERENCES [Order](order_id) ON DELETE NO ACTION
     );
     PRINT 'Table [Payment] created.';
 
@@ -181,10 +197,12 @@ BEGIN TRY
         feedback_id INT IDENTITY(1,1) PRIMARY KEY,
         customer_id INT NOT NULL,
         vehicle_id INT NOT NULL,
-        rating INT CHECK (rating BETWEEN 1 AND 5),
+        rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
         comment TEXT,
-        feedback_date DATETIME DEFAULT GETDATE(),
-        is_active BIT DEFAULT 1,
+        feedback_date DATETIME NOT NULL DEFAULT GETDATE(),
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
         CONSTRAINT FK__Feedback__customer_id FOREIGN KEY (customer_id) REFERENCES [Account](account_id) ON DELETE CASCADE,
         CONSTRAINT FK__Feedback__vehicle_id FOREIGN KEY (vehicle_id) REFERENCES [Vehicle](vehicle_id) ON DELETE CASCADE
     );
@@ -193,11 +211,13 @@ BEGIN TRY
     -- Report
     CREATE TABLE [Report] (
         report_id INT IDENTITY(1,1) PRIMARY KEY,
-        report_type NVARCHAR(255) CHECK (report_type IN ('Sales', 'Inventory', 'Customer', 'Revenue')),
-        generated_date DATETIME DEFAULT GETDATE(),
-        data NVARCHAR(MAX),
-        account_id INT,
-        is_active BIT DEFAULT 1,
+        report_type NVARCHAR(255) NOT NULL,
+        generated_date DATETIME NOT NULL DEFAULT GETDATE(),
+        data NVARCHAR(MAX) NOT NULL,
+        account_id INT NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
         CONSTRAINT FK__Report__account_id FOREIGN KEY (account_id) REFERENCES [Account](account_id) ON DELETE NO ACTION
     );
     PRINT 'Table [Report] created.';
@@ -206,10 +226,12 @@ BEGIN TRY
     CREATE TABLE [Staff_Revenue] (
         staff_revenue_id INT IDENTITY(1,1) PRIMARY KEY,
         staff_id INT NOT NULL,
-        revenue_date DATETIME DEFAULT GETDATE(),
-        total_revenue DECIMAL(12, 2) NOT NULL,
-        commission DECIMAL(12, 2),
-        is_active BIT DEFAULT 1,
+        revenue_date DATETIME NOT NULL DEFAULT GETDATE(),
+        total_revenue DECIMAL(12,2) NOT NULL,
+        commission DECIMAL(12,2),
+        created_at DATETIME NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME,
+        isActive BIT NOT NULL DEFAULT 1,
         CONSTRAINT FK__Staff_Revenue__staff_id FOREIGN KEY (staff_id) REFERENCES [Account](account_id) ON DELETE CASCADE
     );
     PRINT 'Table [Staff_Revenue] created.';
@@ -221,77 +243,95 @@ BEGIN CATCH
 END CATCH
 GO
 
--- Chèn dữ liệu mẫu
+-- Insert sample data
+BEGIN TRY
     -- Role
-    INSERT INTO [Role] (role_name) VALUES
-    ('Admin'), ('Staff'), ('Customer');
+    INSERT INTO [Role] (role_name, created_at) VALUES
+    ('Admin', GETDATE()),
+    ('Staff', GETDATE()),
+    ('Customer', GETDATE());
 
     -- Account
-    INSERT INTO [Account] (username, password, email, contact_number) VALUES
-    ('admin1', 'pass123', 'admin1@email.com', '0901234567'),
-    ('staff1', 'pass456', 'staff1@email.com', '0902345678'),
-    ('customer1', 'pass789', 'customer1@email.com', '0903456789'),
-    ('customer2', 'pass101', 'customer2@email.com', '0904567890');
+    INSERT INTO [Account] (username, password, email, contact_number, created_at) VALUES
+    ('admin1', 'pass123', 'admin1@email.com', '0901234567', GETDATE()),
+    ('staff1', 'pass456', 'staff1@email.com', '0902345678', GETDATE()),
+    ('customer1', 'pass789', 'customer1@email.com', '0903456789', GETDATE()),
+    ('customer2', 'pass101', 'customer2@email.com', '0904567890', GETDATE());
 
     -- Account_Role
-    INSERT INTO [Account_Role] (account_id, role_id) VALUES
-    (1, 1), (2, 2), (3, 3), (4, 3);
+    INSERT INTO [Account_Role] (account_id, role_id, created_at) VALUES
+    (1, 1, GETDATE()),
+    (2, 2, GETDATE()),
+    (3, 3, GETDATE()),
+    (4, 3, GETDATE());
 
     -- Station
-    INSERT INTO [Station] (station_name, location, contact_number, admin_id) VALUES
-    ('Hanoi Station', '123 Hanoi St', '0901112223', 1),
-    ('HCMC Station', '456 HCMC St', '0902223334', 1);
+    INSERT INTO [Station] (station_name, location, contact_number, created_at) VALUES
+    ('Hanoi Station', '123 Hanoi St', '0901112223', GETDATE()),
+    ('HCMC Station', '456 HCMC St', '0902223334', GETDATE());
 
     -- Vehicle
-    INSERT INTO [Vehicle] (model, type, color, price, availability, quantity) VALUES
-    ('Model X', 'Sedan', 'Black', 50000.00, 1, 1),
-    ('Model Y', 'SUV', 'White', 60000.00, 1, 2);
+    INSERT INTO [Vehicle] (model, type, color, price, created_at) VALUES
+    ('Model X', 'Sedan', 'Black', 50000.00, GETDATE()),
+    ('Model Y', 'SUV', 'White', 60000.00, GETDATE());
 
-    -- Inventory
-    INSERT INTO [Inventory] (vehicle_id, station_id, quantity) VALUES
-    (1, 1, 10),
-    (2, 2, 5);
+    -- Station_Car
+    INSERT INTO [Station_Car] (vehicle_id, station_id, quantity, created_at) VALUES
+    (1, 1, 10, GETDATE()),
+    (2, 2, 5, GETDATE());
 
     -- Promotion
-    INSERT INTO [Promotion] (promo_code, discount_percentage, start_date, end_date, applicable_to, station_id) VALUES
-    ('SUMMER25', 10.00, '2025-06-01', '2025-08-31', 'All Vehicles', 1),
-    ('YEAR_END', 15.00, '2025-12-01', '2025-12-31', 'SUV', 2);
+    INSERT INTO [Promotion] (promo_code, discount_percentage, start_date, end_date, applicable_to, station_id, created_at) VALUES
+    ('SUMMER25', 10.00, '2025-06-01', '2025-08-31', 'All Vehicles', 1, GETDATE()),
+    ('YEAR_END', 15.00, '2025-12-01', '2025-12-31', 'SUV', 2, GETDATE());
 
-    -- Orders
-    INSERT INTO [Orders] (customer_id, inventory_id, total_price, status, promotion_id, staff_id) VALUES
-    (3, 1, 45000.00, 'Shipped', 1, 2),
-    (4, 2, 51000.00, 'Pending', 2, 2);
+    -- Schedule
+    INSERT INTO [Schedule] (customer_id, station_car_id, status, schedule_time, created_at) VALUES
+    (3, 1, 'Scheduled', '2025-10-01 10:00:00', GETDATE()),
+    (4, 2, 'Pending', '2025-10-02 14:00:00', GETDATE());
+
+    -- Order
+    INSERT INTO [Order] (customer_id, station_car_id, order_date, total_price, status, promotion_id, staff_id, created_at) VALUES
+    (3, 1, GETDATE(), 45000.00, 'Shipped', 1, 2, GETDATE()),
+    (4, 2, GETDATE(), 51000.00, 'Pending', 2, 2, GETDATE());
 
     -- Contract
-    INSERT INTO [Contract] (order_id, terms, signature, status) VALUES
-    (1, 'Pay within 30 days', 'Customer1', 'Signed'),
-    (2, 'Installment plan', NULL, 'Draft');
+    INSERT INTO [Contract] (order_id, contract_date, terms, signature, status, created_at) VALUES
+    (1, GETDATE(), 'Pay within 30 days', 'Customer1', 'Signed', GETDATE()),
+    (2, GETDATE(), 'Installment plan', NULL, 'Draft', GETDATE());
 
     -- Payment
-    INSERT INTO [Payment] (order_id, amount, payment_method, status) VALUES
-    (1, 45000.00, 'Cash', 'Completed'),
-    (2, 51000.00, 'Installment', 'Pending');
+    INSERT INTO [Payment] (order_id, amount, payment_date, payment_method, status, created_at) VALUES
+    (1, 45000.00, GETDATE(), 'Cash', 'Completed', GETDATE()),
+    (2, 51000.00, GETDATE(), 'Installment', 'Pending', GETDATE());
 
     -- Feedback
-    INSERT INTO [Feedback] (customer_id, vehicle_id, rating, comment) VALUES
-    (3, 1, 5, 'Great vehicle!'),
-    (4, 2, 3, 'Delivery delayed');
+    INSERT INTO [Feedback] (customer_id, vehicle_id, rating, comment, feedback_date, created_at) VALUES
+    (3, 1, 5, 'Great vehicle!', GETDATE(), GETDATE()),
+    (4, 2, 3, 'Delivery delayed', GETDATE(), GETDATE());
 
     -- Report
-    INSERT INTO [Report] (report_type, data, account_id) VALUES
-    ('Sales', '{"total_sales": 45000.00, "orders": 1}', 2),
-    ('Inventory', '{"model_x_stock": 10, "model_y_stock": 5}', 1);
+    INSERT INTO [Report] (report_type, generated_date, data, account_id, created_at) VALUES
+    ('Sales', GETDATE(), '{"total_sales": 45000.00, "orders": 1}', 2, GETDATE()),
+    ('Inventory', GETDATE(), '{"model_x_stock": 10, "model_y_stock": 5}', 1, GETDATE());
 
     -- Staff_Revenue
-    INSERT INTO [Staff_Revenue] (staff_id, total_revenue, commission) VALUES
-    (2, 45000.00, 4500.00),
-    (2, 51000.00, 5100.00);
+    INSERT INTO [Staff_Revenue] (staff_id, revenue_date, total_revenue, commission, created_at) VALUES
+    (2, GETDATE(), 45000.00, 4500.00, GETDATE()),
+    (2, GETDATE(), 51000.00, 5100.00, GETDATE());
+
+    PRINT 'Sample data inserted successfully.';
+END TRY
+BEGIN CATCH
+    PRINT 'Error inserting sample data: ' + ERROR_MESSAGE();
+END CATCH
 GO
 
--- Kiểm tra các bảng đã tạo
-SELECT name AS TableName FROM sys.tables 
-WHERE name IN ('Account', 'Role', 'Account_Role', 'Station', 'Vehicle', 'Inventory', 
-               'Promotion', 'Orders', 'Contract', 'Payment', 'Feedback', 'Report', 
-               'Staff_Revenue')
+-- Check created tables
+SELECT name AS TableName 
+FROM sys.tables 
+WHERE name IN ('Account', 'Role', 'Account_Role', 'Station', 'Vehicle', 'Station_Car', 
+               'Promotion', 'Schedule', 'Order', 'Contract', 'Payment', 'Feedback', 
+               'Report', 'Staff_Revenue')
 ORDER BY name;
 GO

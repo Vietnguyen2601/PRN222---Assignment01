@@ -8,6 +8,7 @@ namespace EleVehicleDealer.Presentation.Controllers
     {
         private readonly IVehicleService _vehicleService;
         private readonly IStationService _stationService;
+
         public VehicleController(IVehicleService vehicleService, IStationService stationService)
         {
             _vehicleService = vehicleService;
@@ -36,10 +37,7 @@ namespace EleVehicleDealer.Presentation.Controllers
                 ViewBag.EditVehicle = null;
                 return View("Index", await _vehicleService.GetAllVehicleAsync());
             }
-            if (bool.TryParse(Request.Form["Availability"], out bool availability))
-            {
-                vehicle.Availability = availability;
-            }
+            // Loại bỏ logic Availability
             vehicle.IsActive = true;
             await _vehicleService.CreateAsync(vehicle);
             TempData["Message"] = "Vehicle created successfully!";
@@ -51,10 +49,7 @@ namespace EleVehicleDealer.Presentation.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (bool.TryParse(Request.Form["Availability"], out bool availability))
-                {
-                    vehicle.Availability = availability;
-                }
+                // Loại bỏ logic Availability
                 await _vehicleService.UpdateAsync(vehicle);
                 TempData["Message"] = "Vehicle updated successfully!";
             }
@@ -99,7 +94,6 @@ namespace EleVehicleDealer.Presentation.Controllers
 
             return View(vehicles);
         }
-
     }
 }
 

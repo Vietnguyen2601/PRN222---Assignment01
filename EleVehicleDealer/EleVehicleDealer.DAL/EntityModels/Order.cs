@@ -7,11 +7,11 @@ public partial class Order
 {
     public int OrderId { get; set; }
 
-    public int? CustomerId { get; set; }
+    public int CustomerId { get; set; }
 
-    public int? InventoryId { get; set; }
+    public int StationCarId { get; set; }
 
-    public DateTime? OrderDate { get; set; }
+    public DateTime OrderDate { get; set; }
 
     public decimal TotalPrice { get; set; }
 
@@ -19,17 +19,23 @@ public partial class Order
 
     public int? PromotionId { get; set; }
 
-    public int? StaffId { get; set; }
+    public int StaffId { get; set; }
 
-    public bool? IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public bool IsActive { get; set; }
 
     public virtual ICollection<Contract> Contracts { get; set; } = new List<Contract>();
 
-    public virtual Account? Customer { get; set; }
-
-    public virtual Inventory? Inventory { get; set; }
+    public virtual Account Customer { get; set; } = null!;
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
-    public virtual Account? Staff { get; set; }
+    public virtual Promotion? Promotion { get; set; }
+
+    public virtual Account Staff { get; set; } = null!;
+
+    public virtual StationCar StationCar { get; set; } = null!;
 }

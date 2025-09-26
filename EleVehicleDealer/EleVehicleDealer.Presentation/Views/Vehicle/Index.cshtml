@@ -2,9 +2,11 @@
 @model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
 @{
     var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.DAL.EntityModels.Vehicle;
-    var isAvailable = editVehicle?.Availability ?? false;
+    // Loại bỏ isAvailable vì không có Availability
     var message = TempData["Message"] as string;
     var error = TempData["Error"] as string;
+    // Lấy StationId từ StationCars (giả định StationCar có StationId)
+    var stationId = editVehicle?.StationCars.FirstOrDefault()?.StationId ?? 0;
 }
 
 <!-- Hiển thị thông báo -->
@@ -42,16 +44,10 @@
             <label>Price</label>
             <input name="Price" class="form-control" type="number" step="0.01" value="@(editVehicle?.Price ?? 0)" required />
         </div>
-        <div class="form-group">
-            <label>Availability</label>
-            <select name="Availability" class="form-control" required>
-                <option value="true" selected="@isAvailable">Yes</option>
-                <option value="false" selected="@(!isAvailable)">No</option>
-            </select>
-        </div>
+        <!-- Loại bỏ select Availability -->
         <div class="form-group">
             <label>Station ID</label>
-            <input name="StationId" class="form-control" type="number" value="@(editVehicle?.StationId ?? 0)" required />
+            <input name="StationId" class="form-control" type="number" value="@stationId" />
         </div>
         <button type="submit" class="btn btn-success">@(editVehicle != null ? "Save" : "Create")</button>
         @if (editVehicle != null)
@@ -71,7 +67,7 @@
             <th>Type</th>
             <th>Color</th>
             <th>Price</th>
-            <th>Availability</th>
+            <!-- Loại bỏ Availability -->
             <th>Station</th>
             <th>Actions</th>
         </tr>
@@ -84,8 +80,7 @@
                 <td>@v.Type</td>
                 <td>@v.Color</td>
                 <td>@v.Price</td>
-                <td>@(v.Availability ? "Yes" : "No")</td>
-                <td>@v.StationId</td>
+                <td>@(v.StationCars.FirstOrDefault()?.StationId ?? 0)</td>
                 <td>
                     <form action="/Vehicle/Delete" method="post" style="display:inline">
                         <input type="hidden" name="id" value="@v.VehicleId" />

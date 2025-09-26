@@ -3,19 +3,17 @@ using System.Collections.Generic;
 
 namespace EleVehicleDealer.DAL.EntityModels;
 
-public partial class Feedback
+public partial class Schedule
 {
-    public int FeedbackId { get; set; }
+    public int ScheduleId { get; set; }
 
     public int CustomerId { get; set; }
 
-    public int VehicleId { get; set; }
+    public int StationCarId { get; set; }
 
-    public int Rating { get; set; }
+    public string Status { get; set; } = null!;
 
-    public string? Comment { get; set; }
-
-    public DateTime FeedbackDate { get; set; }
+    public DateTime ScheduleTime { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -25,5 +23,5 @@ public partial class Feedback
 
     public virtual Account Customer { get; set; } = null!;
 
-    public virtual Vehicle Vehicle { get; set; } = null!;
+    public virtual StationCar StationCar { get; set; } = null!;
 }

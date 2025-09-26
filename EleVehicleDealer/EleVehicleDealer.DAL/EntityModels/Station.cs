@@ -9,17 +9,17 @@ public partial class Station
 
     public string StationName { get; set; } = null!;
 
-    public string? Location { get; set; }
+    public string Location { get; set; } = null!;
 
     public string? ContactNumber { get; set; }
 
-    public int? AdminId { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-    public bool? IsActive { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-    public virtual Account? Admin { get; set; }
-
-    public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+    public bool IsActive { get; set; }
 
     public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
+
+    public virtual ICollection<StationCar> StationCars { get; set; } = new List<StationCar>();
 }

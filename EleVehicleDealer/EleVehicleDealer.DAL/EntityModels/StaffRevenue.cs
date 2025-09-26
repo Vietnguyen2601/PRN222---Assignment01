@@ -9,13 +9,17 @@ public partial class StaffRevenue
 
     public int StaffId { get; set; }
 
-    public DateTime? RevenueDate { get; set; }
+    public DateTime RevenueDate { get; set; }
 
     public decimal TotalRevenue { get; set; }
 
     public decimal? Commission { get; set; }
 
-    public bool? IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public bool IsActive { get; set; }
 
     public virtual Account Staff { get; set; } = null!;
 }

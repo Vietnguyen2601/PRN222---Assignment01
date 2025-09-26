@@ -1,0 +1,110 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<EleVehicleDealer.DAL.EntityModels.Order>
+@{
+    var editOrder = ViewBag.EditOrder as EleVehicleDealer.DAL.EntityModels.Order;
+    var isActive = editOrder?.IsActive ?? false; // Sử dụng IsActive thay vì Availability cho Order
+    var message = TempData["Message"] as string;
+    var error = TempData["Error"] as string;
+}
+
+<!-- Hiển thị thông báo -->
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-success">@message</div>
+}
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<h2>Order Management</h2>
+
+<div>
+    <h4>@(editOrder != null ? "Edit Order" : "Create Order")</h4>
+    <form asp-controller="Order" asp-action="@(editOrder != null ? "Edit" : "Create")" method="post">
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        @if (editOrder != null)
+        {
+            <input type="hidden" name="OrderId" value="@editOrder.OrderId" />
+        }
+        <div class="form-group">
+            <label>Customer ID</label>
+            <input name="CustomerId" class="form-control" type="number" value="@(editOrder?.CustomerId ?? 0)" required />
+        </div>
+        <div class="form-group">
+            <label>Inventory ID</label>
+            <input name="InventoryId" class="form-control" type="number" value="@(editOrder?.InventoryId ?? 0)" required />
+        </div>
+        <div class="form-group">
+            <label>Order Date</label>
+            <input name="OrderDate" class="form-control" type="datetime-local" value="@(editOrder?.OrderDate?.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required />
+        </div>
+        <div class="form-group">
+            <label>Total Price</label>
+            <input name="TotalPrice" class="form-control" type="number" step="0.01" value="@(editOrder?.TotalPrice ?? 0)" required />
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <input name="Status" class="form-control" value="@(editOrder?.Status ?? "Pending")" required />
+        </div>
+        <div class="form-group">
+            <label>Promotion ID</label>
+            <input name="PromotionId" class="form-control" type="number" value="@(editOrder?.PromotionId ?? 0)" />
+        </div>
+        <div class="form-group">
+            <label>Staff ID</label>
+            <input name="StaffId" class="form-control" type="number" value="@(editOrder?.StaffId ?? 0)" />
+        </div>
+        <div class="form-group">
+            <label>Is Active</label>
+            <select name="IsActive" class="form-control" required>
+                <option value="true" selected="@isActive">Yes</option>
+                <option value="false" selected="@(!isActive)">No</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">@(editOrder != null ? "Save" : "Create")</button>
+        @if (editOrder != null)
+        {
+            <a asp-action="GetAll" class="btn btn-secondary">Cancel</a>
+        }
+    </form>
+</div>
+
+<hr />
+
+<!-- Danh sách đơn hàng -->
+<table class="table">
+    <thead>
+        <tr>
+            <th>Order ID</th>
+            <th>Customer ID</th>
+            <th>Inventory ID</th>
+            <th>Order Date</th>
+            <th>Total Price</th>
+            <th>Status</th>
+            <th>Is Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>@o.OrderId</td>
+                <td>@o.CustomerId</td>
+                <td>@o.InventoryId</td>
+                <td>@o.OrderDate</td>
+                <td>@o.TotalPrice</td>
+                <td>@o.Status</td>
+                <td>@(o.IsActive == true ? "Yes" : "No")</td>
+                <td>
+                    <form action="/Order/Delete" method="post" style="display:inline">
+                        <input type="hidden" name="id" value="@o.OrderId" />
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Soft delete this order?')">Delete</button>
+                    </form>
+                    <a asp-action="GetAll" asp-route-editId="@o.OrderId" class="btn btn-primary btn-sm">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

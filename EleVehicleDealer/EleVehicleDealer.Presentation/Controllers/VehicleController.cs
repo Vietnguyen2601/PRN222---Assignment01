@@ -29,6 +29,62 @@ namespace EleVehicleDealer.Presentation.Controllers
             return View(vehicles);
         }
 
+        public async Task<IActionResult> Catalog(string searchTerm, string type, decimal? minPrice, decimal? maxPrice)
+        {
+            IEnumerable<Vehicle> vehicles;
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                vehicles = await _vehicleService.SearchVehiclesAsync(searchTerm);
+            }
+            else if (!string.IsNullOrEmpty(type))
+            {
+                vehicles = await _vehicleService.GetVehiclesByTypeAsync(type);
+            }
+            else if (minPrice.HasValue && maxPrice.HasValue)
+            {
+                vehicles = await _vehicleService.GetVehiclesByPriceRangeAsync(minPrice.Value, maxPrice.Value);
+            }
+            else
+            {
+                vehicles = await _vehicleService.GetAllVehicleAsync();
+            }
+
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.Type = type;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+
+            return View("Catalog", vehicles);
+        }
+
+        public async Task<IActionResult> Compare(int[] vehicleIds)
+        {
+            if (vehicleIds == null || vehicleIds.Length < 2 || vehicleIds.Length > 4)
+            {
+                TempData["Error"] = "Please select 2-4 vehicles to compare.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var vehicles = new List<Vehicle>();
+            foreach (var id in vehicleIds)
+            {
+                var vehicle = await _vehicleService.GetByIdAsync(id);
+                if (vehicle != null)
+                {
+                    vehicles.Add(vehicle);
+                }
+            }
+
+            if (vehicles.Count < 2)
+            {
+                TempData["Error"] = "Some vehicles not found or not active.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(vehicles);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(Vehicle vehicle)
         {

@@ -19,7 +19,7 @@ namespace EleVehicleDealer.Presentation.Controllers
             if (!ModelState.IsValid)
             {
                 ViewBag.EditOrder = null; // Sử dụng ViewBag để truyền dữ liệu vào view
-                return View("Index", await _orderService.GetAllOrdersAsync());
+                //return View("Index", await _orderService.GetAllOrdersAsync());
             }
 
             order.IsActive = true; // Đặt trạng thái mặc định
@@ -32,10 +32,10 @@ namespace EleVehicleDealer.Presentation.Controllers
 
 
 
-        public async Task<IActionResult> Index()
-        {
-            var orders = await _orderService.GetAllOrdersAsync();
-            return View(orders); // Trả về view Index với danh sách đơn hàng
-        }
+        //public async Task<IActionResult> Index()
+        //{
+        //    //var orders = await _orderService.GetAllOrdersAsync();
+        //    //return View(orders); // Trả về view Index với danh sách đơn hàng
+        //}
     }
 }

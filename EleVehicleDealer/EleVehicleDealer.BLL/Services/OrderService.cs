@@ -28,9 +28,9 @@ namespace EleVehicleDealer.BLL.Services
             return await _orderRepository.CreateOrderAsync(order);
         }
 
-        public async Task<IEnumerable<Order>> GetAllOrdersAsync()
-        {
-            return await _orderRepository.GetAllOrdersAsync();
-        }
+        //public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+        //{
+        //    return await _orderRepository.GetAllOrdersAsync();
+        //}
     }
 }

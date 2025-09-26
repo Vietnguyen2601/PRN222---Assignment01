@@ -41,12 +41,12 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             }
         }
 
-        public async Task<IEnumerable<Order>> GetAllOrdersAsync()
-        {
-            return await _context.Orders
-                .Where(o => o.IsActive ?? false)
-                .AsNoTracking()
-                .ToListAsync();
-        }
+        //public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+        //{
+        //    return await _context.Orders
+        //        .Where(o => o.IsActive ?? false)
+        //        .AsNoTracking()
+        //        .ToListAsync();
+        //}
     }
 }

@@ -13,7 +13,7 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
 
         Task<Order> CreateOrderAsync(Order order);
 
-        Task<IEnumerable<Order>> GetAllOrdersAsync();
+        //Task<IEnumerable<Order>> GetAllOrdersAsync();
 
         //lấy order theo account id
 

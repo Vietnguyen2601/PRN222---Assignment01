@@ -33,11 +33,11 @@
         </div>
         <div class="form-group">
             <label>Inventory ID</label>
-            <input name="InventoryId" class="form-control" type="number" value="@(editOrder?.InventoryId ?? 0)" required />
+            @* <input name="InventoryId" class="form-control" type="number" value="@(editOrder?.InventoryId ?? 0)" required /> *@
         </div>
         <div class="form-group">
             <label>Order Date</label>
-            <input name="OrderDate" class="form-control" type="datetime-local" value="@(editOrder?.OrderDate?.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required />
+            @* <input name="OrderDate" class="form-control" type="datetime-local" value="@(editOrder?.OrderDate?.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required /> *@
         </div>
         <div class="form-group">
             <label>Total Price</label>
@@ -92,7 +92,7 @@
             <tr>
                 <td>@o.OrderId</td>
                 <td>@o.CustomerId</td>
-                <td>@o.InventoryId</td>
+                @* <td>@o.InventoryId</td> *@
                 <td>@o.OrderDate</td>
                 <td>@o.TotalPrice</td>
                 <td>@o.Status</td>

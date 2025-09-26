@@ -11,13 +11,17 @@ public partial class Payment
 
     public decimal Amount { get; set; }
 
-    public DateTime? PaymentDate { get; set; }
+    public DateTime PaymentDate { get; set; }
 
     public string PaymentMethod { get; set; } = null!;
 
     public string Status { get; set; } = null!;
 
-    public bool? IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public bool IsActive { get; set; }
 
     public virtual Order Order { get; set; } = null!;
 }

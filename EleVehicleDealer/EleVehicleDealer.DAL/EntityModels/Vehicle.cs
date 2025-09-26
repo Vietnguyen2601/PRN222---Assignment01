@@ -9,21 +9,19 @@ public partial class Vehicle
 
     public string Model { get; set; } = null!;
 
-    public string? Type { get; set; }
+    public string Type { get; set; } = null!;
 
     public string? Color { get; set; }
 
     public decimal Price { get; set; }
 
-    public bool Availability { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-    public int? StationId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-    public bool? IsActive { get; set; }
-
-    public int? Quantity { get; set; }
+    public bool IsActive { get; set; }
 
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
-    public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+    public virtual ICollection<StationCar> StationCars { get; set; } = new List<StationCar>();
 }

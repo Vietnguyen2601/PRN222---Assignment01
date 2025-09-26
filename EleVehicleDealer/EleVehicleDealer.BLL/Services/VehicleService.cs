@@ -15,7 +15,7 @@ namespace EleVehicleDealer.BLL.Services
     public class VehicleService : IVehicleService
     {
         private readonly IVehicleRepository _vehicleRepository;
-        private readonly EvdmsDatabaseContext _context = new EvdmsDatabaseContext();
+        private readonly EvdmsDatabaseContext _context;
 
         public VehicleService(IVehicleRepository vehicleRepository, EvdmsDatabaseContext context)
         {
@@ -36,13 +36,13 @@ namespace EleVehicleDealer.BLL.Services
 
         public async Task<IEnumerable<Vehicle>> GetAllVehicleAsync()
         {
-          return await _vehicleRepository.GetAllVehicleAsync();
+            return await _vehicleRepository.GetAllVehicleAsync();
         }
 
         public async Task<Vehicle> GetByIdAsync(int id)
         {
             var vehicle = await _context.Vehicles.FindAsync(id);
-            if (vehicle == null || !vehicle.IsActive.GetValueOrDefault(false))
+            if (vehicle == null || !vehicle.IsActive)
                 return null;
             return vehicle;
         }
@@ -62,15 +62,15 @@ namespace EleVehicleDealer.BLL.Services
             return await _vehicleRepository.GetVehiclesByTypeAsync(type);
         }
 
-        //public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
-        //{
-        //    return await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
-        //}
+        public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
+        {
+            return await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
+        }
 
-        //public async Task<int> GetTotalStockAsync()
-        //{
-        //    return await _vehicleRepository.GetTotalStockAsync();
-        //}
+        public async Task<int> GetTotalStockAsync()
+        {
+            return await _vehicleRepository.GetTotalStockAsync();
+        }
 
         public async Task<IEnumerable<Vehicle>> SearchVehiclesAsync(string searchTerm)
         {
@@ -79,7 +79,7 @@ namespace EleVehicleDealer.BLL.Services
 
         public async Task<bool> UpdateStockQuantityAsync(int vehicleId, int quantity)
         {
-            return await _vehicleRepository.UpdateStockAvailabilityAsync(vehicleId, quantity);
+            throw new NotImplementedException("UpdateStockQuantityAsync is not applicable without Availability. Please redefine the logic if needed.");
         }
 
         public async Task<Vehicle> UpdateAsync(Vehicle vehicle)
@@ -87,19 +87,23 @@ namespace EleVehicleDealer.BLL.Services
             if (vehicle == null)
                 throw new ArgumentNullException(nameof(vehicle));
 
-            var existingVehicle = await _context.Vehicles.FindAsync(vehicle.VehicleId);
-            if (existingVehicle == null || !(existingVehicle.IsActive ?? false))
+            var existingVehicle = await _context.Vehicles.FindAsync(vehicle);
+            if (existingVehicle == null || !existingVehicle.IsActive)
                 return null;
 
             existingVehicle.Model = vehicle.Model;
             existingVehicle.Type = vehicle.Type;
             existingVehicle.Color = vehicle.Color;
             existingVehicle.Price = vehicle.Price;
-            existingVehicle.Availability = vehicle.Availability;
-            existingVehicle.StationId = vehicle.StationId;
+
 
             await _context.SaveChangesAsync();
             return existingVehicle;
+        }
+
+        public async Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId)
+        {
+            return await _vehicleRepository.GetVehiclesByStationAsync(stationId);
         }
     }
 }

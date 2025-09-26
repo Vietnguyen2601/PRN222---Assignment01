@@ -7,10 +7,12 @@ namespace EleVehicleDealer.Presentation.Controllers
     public class VehicleController : Controller
     {
         private readonly IVehicleService _vehicleService;
+        private readonly IStationService _stationService;
 
-        public VehicleController(IVehicleService vehicleService)
+        public VehicleController(IVehicleService vehicleService, IStationService stationService)
         {
             _vehicleService = vehicleService;
+            _stationService = stationService;
         }
 
         public async Task<IActionResult> Index(int? editId)
@@ -35,10 +37,7 @@ namespace EleVehicleDealer.Presentation.Controllers
                 ViewBag.EditVehicle = null;
                 return View("Index", await _vehicleService.GetAllVehicleAsync());
             }
-            if (bool.TryParse(Request.Form["Availability"], out bool availability))
-            {
-                vehicle.Availability = availability;
-            }
+            // Loại bỏ logic Availability
             vehicle.IsActive = true;
             await _vehicleService.CreateAsync(vehicle);
             TempData["Message"] = "Vehicle created successfully!";
@@ -50,10 +49,7 @@ namespace EleVehicleDealer.Presentation.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (bool.TryParse(Request.Form["Availability"], out bool availability))
-                {
-                    vehicle.Availability = availability;
-                }
+                // Loại bỏ logic Availability
                 await _vehicleService.UpdateAsync(vehicle);
                 TempData["Message"] = "Vehicle updated successfully!";
             }
@@ -73,6 +69,30 @@ namespace EleVehicleDealer.Presentation.Controllers
                 TempData["Error"] = "Failed to delete vehicle.";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Home(int? stationId)
+        {
+            var stations = await _stationService.GetAllStationsAsync();
+            var vehicles = stationId.HasValue && stationId.Value > 0
+                ? await _vehicleService.GetVehiclesByStationAsync(stationId.Value)
+                : await _vehicleService.GetAllVehicleAsync();
+
+            if (stations == null || !stations.Any())
+            {
+                TempData["Error"] = "No stations found.";
+            }
+
+            if (vehicles == null || !vehicles.Any())
+            {
+                TempData["Error"] = "No vehicles found.";
+            }
+
+            ViewBag.Stations = stations;
+            ViewBag.SelectedStationId = stationId;
+
+            return View(vehicles);
         }
     }
 }

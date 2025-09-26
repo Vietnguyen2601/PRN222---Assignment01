@@ -15,9 +15,11 @@ public partial class Account
 
     public string? ContactNumber { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-    public bool? IsActive { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    public bool IsActive { get; set; }
 
     public virtual ICollection<AccountRole> AccountRoles { get; set; } = new List<AccountRole>();
 
@@ -29,7 +31,7 @@ public partial class Account
 
     public virtual ICollection<Report> Reports { get; set; } = new List<Report>();
 
-    public virtual ICollection<StaffRevenue> StaffRevenues { get; set; } = new List<StaffRevenue>();
+    public virtual ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
 
-    public virtual ICollection<Station> Stations { get; set; } = new List<Station>();
+    public virtual ICollection<StaffRevenue> StaffRevenues { get; set; } = new List<StaffRevenue>();
 }

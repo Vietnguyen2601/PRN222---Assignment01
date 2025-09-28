@@ -2,76 +2,74 @@
 @model IEnumerable<EleVehicleDealer.DAL.EntityModels.Order>
 @{
     var editOrder = ViewBag.EditOrder as EleVehicleDealer.DAL.EntityModels.Order;
-    var isActive = editOrder?.IsActive ?? false; // Sử dụng IsActive thay vì Availability cho Order
+    var isActive = editOrder?.IsActive ?? true;
+    var status = editOrder?.Status ?? "Pending";
     var message = TempData["Message"] as string;
     var error = TempData["Error"] as string;
 }
-
 <!-- Hiển thị thông báo -->
 @if (!string.IsNullOrEmpty(message))
 {
-    <div class="alert alert-success">@message</div>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @message
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 @if (!string.IsNullOrEmpty(error))
 {
-    <div class="alert alert-danger">@error</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @error
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
-
 <h2>Order Management</h2>
-
-<div>
-    <h4>@(editOrder != null ? "Edit Order" : "Create Order")</h4>
-    <form asp-controller="Order" asp-action="@(editOrder != null ? "Edit" : "Create")" method="post">
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @if (editOrder != null)
-        {
-            <input type="hidden" name="OrderId" value="@editOrder.OrderId" />
-        }
-        <div class="form-group">
-            <label>Customer ID</label>
-            <input name="CustomerId" class="form-control" type="number" value="@(editOrder?.CustomerId ?? 0)" required />
+<!-- Form tạo đơn hàng -->
+<div class="mb-4">
+    <h4>Create Order</h4>
+    <form asp-controller="Order" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(false, "", new { @class = "text-danger" }) <!-- Hiển thị lỗi chi tiết -->
+        <div class="form-group mb-3">
+            <label asp-for="@editOrder.CustomerId">Customer ID</label>
+            <input asp-for="@editOrder.CustomerId" name="CustomerId" id="CustomerId" class="form-control" type="number" required min="1" />
+            <span asp-validation-for="@editOrder.CustomerId" class="text-danger"></span>
         </div>
-        <div class="form-group">
-            <label>Inventory ID</label>
-            @* <input name="InventoryId" class="form-control" type="number" value="@(editOrder?.InventoryId ?? 0)" required /> *@
+        <div class="form-group mb-3">
+            <label asp-for="@editOrder.StationCarId">Inventory ID</label>
+            <input asp-for="@editOrder.StationCarId" name="StationCarId" id="StationCarId" class="form-control" type="number" required min="1" />
+            <span asp-validation-for="@editOrder.StationCarId" class="text-danger"></span>
         </div>
-        <div class="form-group">
-            <label>Order Date</label>
-            @* <input name="OrderDate" class="form-control" type="datetime-local" value="@(editOrder?.OrderDate?.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required /> *@
+        <div class="form-group mb-3">
+            <label asp-for="@editOrder.StaffId">Staff ID</label>
+            <input asp-for="@editOrder.StaffId" name="StaffId" id="StaffId" class="form-control" type="number" required min="1" />
+            <span asp-validation-for="@editOrder.StaffId" class="text-danger"></span>
         </div>
-        <div class="form-group">
-            <label>Total Price</label>
-            <input name="TotalPrice" class="form-control" type="number" step="0.01" value="@(editOrder?.TotalPrice ?? 0)" required />
+        <div class="form-group mb-3">
+            <label asp-for="@editOrder.PromotionId">Promotion ID (Optional)</label>
+            <input asp-for="@editOrder.PromotionId" name="PromotionId" id="PromotionId" class="form-control" type="number" />
+            <span asp-validation-for="@editOrder.PromotionId" class="text-danger"></span>
         </div>
-        <div class="form-group">
-            <label>Status</label>
-            <input name="Status" class="form-control" value="@(editOrder?.Status ?? "Pending")" required />
-        </div>
-        <div class="form-group">
-            <label>Promotion ID</label>
-            <input name="PromotionId" class="form-control" type="number" value="@(editOrder?.PromotionId ?? 0)" />
-        </div>
-        <div class="form-group">
-            <label>Staff ID</label>
-            <input name="StaffId" class="form-control" type="number" value="@(editOrder?.StaffId ?? 0)" />
-        </div>
-        <div class="form-group">
-            <label>Is Active</label>
-            <select name="IsActive" class="form-control" required>
-                <option value="true" selected="@isActive">Yes</option>
-                <option value="false" selected="@(!isActive)">No</option>
+        <div class="form-group mb-3">
+            <label asp-for="@editOrder.Status">Status</label>
+            <select asp-for="@editOrder.Status" name="Status" id="Status" class="form-control" required>
+                <option value="Pending" selected>Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Cancelled">Cancelled</option>
             </select>
+            <span asp-validation-for="@editOrder.Status" class="text-danger"></span>
         </div>
-        <button type="submit" class="btn btn-success">@(editOrder != null ? "Save" : "Create")</button>
-        @if (editOrder != null)
-        {
-            <a asp-action="GetAll" class="btn btn-secondary">Cancel</a>
-        }
+        <div class="form-group mb-3">
+            <label asp-for="@editOrder.IsActive">Is Active</label>
+            <select asp-for="@editOrder.IsActive" name="IsActive" id="IsActive" class="form-control" required>
+                <option value="true" selected>Yes</option>
+                <option value="false">No</option>
+            </select>
+            <span asp-validation-for="@editOrder.IsActive" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-success" onclick="this.disabled=true; this.form.submit();">Create</button>
     </form>
 </div>
-
 <hr />
-
 <!-- Danh sách đơn hàng -->
 <table class="table">
     <thead>
@@ -92,7 +90,7 @@
             <tr>
                 <td>@o.OrderId</td>
                 <td>@o.CustomerId</td>
-                @* <td>@o.InventoryId</td> *@
+                <td>@o.StationCarId</td>
                 <td>@o.OrderDate</td>
                 <td>@o.TotalPrice</td>
                 <td>@o.Status</td>
@@ -102,9 +100,11 @@
                         <input type="hidden" name="id" value="@o.OrderId" />
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Soft delete this order?')">Delete</button>
                     </form>
-                    <a asp-action="GetAll" asp-route-editId="@o.OrderId" class="btn btn-primary btn-sm">Edit</a>
+                    <a asp-action="OrderManager" asp-route-editId="@o.OrderId" class="btn btn-primary btn-sm">Edit</a>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>

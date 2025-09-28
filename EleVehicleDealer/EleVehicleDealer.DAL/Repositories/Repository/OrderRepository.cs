@@ -21,16 +21,10 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<Order>  CreateOrderAsync(Order order)
+        public async Task<Order> CreateOrderAsync(Order order)
         {
-            //Validation 
-
-            // try save
             try
             {
-                order.IsActive = true;
-                order.OrderDate = DateTime.UtcNow;
-                order.Status = "Pending"; // Default status
                 await _context.Orders.AddAsync(order);
                 await _context.SaveChangesAsync();
                 return order;
@@ -41,12 +35,12 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             }
         }
 
-        //public async Task<IEnumerable<Order>> GetAllOrdersAsync()
-        //{
-        //    return await _context.Orders
-        //        .Where(o => o.IsActive ?? false)
-        //        .AsNoTracking()
-        //        .ToListAsync();
-        //}
+        public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+        {
+            return await _context.Orders
+                .Where(o => o.IsActive == true)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

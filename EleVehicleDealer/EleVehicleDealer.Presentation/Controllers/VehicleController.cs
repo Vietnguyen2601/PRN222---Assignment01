@@ -128,12 +128,44 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Home(int? stationId)
+        public async Task<IActionResult> Home(int? stationId, string sortBy, string filterType, string filterModel, decimal? minPrice, decimal? maxPrice)
         {
             var stations = await _stationService.GetAllStationsAsync();
             var vehicles = stationId.HasValue && stationId.Value > 0
                 ? await _vehicleService.GetVehiclesByStationAsync(stationId.Value)
                 : await _vehicleService.GetAllVehicleAsync();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(filterType) && filterType != "All")
+            {
+                vehicles = vehicles.Where(v => v.Type.Contains(filterType, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrEmpty(filterModel) && filterModel != "All")
+            {
+                vehicles = vehicles.Where(v => v.Model.Contains(filterModel, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (minPrice.HasValue)
+            {
+                vehicles = vehicles.Where(v => v.Price >= minPrice.Value);
+            }
+
+            if (maxPrice.HasValue)
+            {
+                vehicles = vehicles.Where(v => v.Price <= maxPrice.Value);
+            }
+
+            // Apply sorting
+            vehicles = sortBy switch
+            {
+                "alphabet_desc" => vehicles.OrderByDescending(v => v.Model),
+                "price" => vehicles.OrderBy(v => v.Price),
+                "price_desc" => vehicles.OrderByDescending(v => v.Price),
+                "type" => vehicles.OrderBy(v => v.Type),
+                "type_desc" => vehicles.OrderByDescending(v => v.Type),
+                _ => vehicles.OrderBy(v => v.Model) // default alphabet
+            };
 
             if (stations == null || !stations.Any())
             {
@@ -142,11 +174,20 @@ namespace EleVehicleDealer.Presentation.Controllers
 
             if (vehicles == null || !vehicles.Any())
             {
-                TempData["Error"] = "No vehicles found.";
+                TempData["Error"] = "No vehicles found for the selected criteria.";
             }
 
+            // Prepare ViewBag data
+            var allVehicles = await _vehicleService.GetAllVehicleAsync();
             ViewBag.Stations = stations;
             ViewBag.SelectedStationId = stationId;
+            ViewBag.SortBy = sortBy;
+            ViewBag.FilterType = filterType;
+            ViewBag.FilterModel = filterModel;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+            ViewBag.VehicleTypes = allVehicles.Select(v => v.Type).Distinct().OrderBy(t => t).ToList();
+            ViewBag.VehicleModels = allVehicles.Select(v => v.Model).Distinct().OrderBy(m => m).ToList();
 
             return View(vehicles);
         }

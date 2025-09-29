@@ -1,8 +1,19 @@
+
 @model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
 @{
     var error = TempData["Error"] as string;
     var stations = ViewBag.Stations as IEnumerable<EleVehicleDealer.DAL.EntityModels.Station>;
     var selectedStationId = ViewBag.SelectedStationId as int? ?? 0;
+    var vehicleTypes = ViewBag.VehicleTypes as List<string> ?? new List<string>();
+    var vehicleModels = ViewBag.VehicleModels as List<string> ?? new List<string>();
+    var sortBy = ViewBag.SortBy as string ?? "";
+    var filterType = ViewBag.FilterType as string ?? "";
+    var filterModel = ViewBag.FilterModel as string ?? "";
+    var minPrice = ViewBag.MinPrice as decimal?;
+    var maxPrice = ViewBag.MaxPrice as decimal?;
+    
+    var username = Context.Session.GetString("Username");
+    var isLoggedIn = !string.IsNullOrEmpty(username);
 }
 
 <div class="main-container">
@@ -13,33 +24,95 @@
 
     <h2>Welcome to EleVehicleDealer</h2>
 
-    <form method="get" asp-action="Home" asp-controller="Vehicle" class="filter-container" id="stationForm">
-        <div class="filter-group">
-            <label for="stationId">Select Station:</label>
-            <select id="stationId" name="stationId" class="form-control" onchange="document.getElementById('stationForm').submit();">
-                <option value="0" @(selectedStationId == 0 ? "selected" : "")>All Stations</option>
-                @if (stations != null)
-                {
-                    foreach (var station in stations)
+    <!-- Enhanced Filter System -->
+    <form method="get" asp-action="Home" asp-controller="Vehicle" class="advanced-filter-container" id="filterForm">
+        <!-- Station Selection -->
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="stationId">Select Station:</label>
+                <select id="stationId" name="stationId" class="form-control">
+                    <option value="0" @(selectedStationId == 0 ? "selected" : "")>All Stations</option>
+                    @if (stations != null)
                     {
-                        <option value="@station.StationId" @(selectedStationId == station.StationId ? "selected" : "")>
-                            @station.StationName
-                        </option>
+                        foreach (var station in stations)
+                        {
+                            <option value="@station.StationId" @(selectedStationId == station.StationId ? "selected" : "")>
+                                @station.StationName
+                            </option>
+                        }
                     }
-                }
-            </select>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="sortBy">Sort By:</label>
+                <select id="sortBy" name="sortBy" class="form-control">
+                    <option value="alphabet" @(sortBy == "alphabet" ? "selected" : "")>Alphabet (A-Z)</option>
+                    <option value="alphabet_desc" @(sortBy == "alphabet_desc" ? "selected" : "")>Alphabet (Z-A)</option>
+                    <option value="price" @(sortBy == "price" ? "selected" : "")>Price (Low to High)</option>
+                    <option value="price_desc" @(sortBy == "price_desc" ? "selected" : "")>Price (High to Low)</option>
+                    <option value="type" @(sortBy == "type" ? "selected" : "")>Type (A-Z)</option>
+                    <option value="type_desc" @(sortBy == "type_desc" ? "selected" : "")>Type (Z-A)</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filterType">Filter by Type:</label>
+                <select id="filterType" name="filterType" class="form-control">
+                    <option value="All" @(string.IsNullOrEmpty(filterType) || filterType == "All" ? "selected" : "")>All Types</option>
+                    @foreach (var type in vehicleTypes)
+                    {
+                        <option value="@type" @(filterType == type ? "selected" : "")>@type</option>
+                    }
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filterModel">Filter by Model:</label>
+                <select id="filterModel" name="filterModel" class="form-control">
+                    <option value="All" @(string.IsNullOrEmpty(filterModel) || filterModel == "All" ? "selected" : "")>All Models</option>
+                    @foreach (var vehicleModel in vehicleModels)
+                    {
+                        <option value="@vehicleModel" @(filterModel == vehicleModel ? "selected" : "")>@vehicleModel</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <!-- Price Range Filter -->
+        <div class="filter-row">
+            <div class="filter-group price-group">
+                <label for="minPrice">Min Price:</label>
+                <input type="number" id="minPrice" name="minPrice" class="form-control price-input" 
+                       placeholder="Min" value="@minPrice" step="1000" min="0">
+            </div>
+
+            <div class="filter-group price-group">
+                <label for="maxPrice">Max Price:</label>
+                <input type="number" id="maxPrice" name="maxPrice" class="form-control price-input" 
+                       placeholder="Max" value="@maxPrice" step="1000" min="0">
+            </div>
+
+            <div class="filter-group">
+                <button type="submit" class="btn-filter">Apply Filters</button>
+                <button type="button" class="btn-clear" onclick="clearFilters()">Clear All</button>
+            </div>
         </div>
     </form>
 
-    <div class="filter-container">
+    <!-- Display Options -->
+    <div class="display-options">
         <div class="filter-group">
             <label for="cardsPerRow">Cards per row:</label>
             <select id="cardsPerRow" class="form-control" onchange="adjustGridColumns()">
                 <option value="3">3 Cards</option>
-                <option value="4">4 Cards</option>
+                <option value="4" selected>4 Cards</option>
                 <option value="5">5 Cards</option>
                 <option value="6">6 Cards</option>
             </select>
+        </div>
+        <div class="results-count">
+            <span>Showing @Model.Count() vehicles</span>
         </div>
     </div>
 
@@ -77,9 +150,62 @@
         }, 300);
     }
 
+    function clearFilters() {
+        document.getElementById('stationId').value = '0';
+        document.getElementById('sortBy').value = 'alphabet';
+        document.getElementById('filterType').value = 'All';
+        document.getElementById('filterModel').value = 'All';
+        document.getElementById('minPrice').value = '';
+        document.getElementById('maxPrice').value = '';
+        document.getElementById('filterForm').submit();
+    }
+
+    function autoSubmitFilter() {
+        document.getElementById('filterForm').submit();
+    }
+
+    // Dropdown functionality now handled by CSS hover and click events
+
+
+
     // Initialize grid on page load
     document.addEventListener('DOMContentLoaded', function() {
         adjustGridColumns();
+        
+        // Add auto-submit to certain filters for better UX
+        if (document.getElementById('stationId')) {
+            document.getElementById('stationId').addEventListener('change', autoSubmitFilter);
+        }
+        if (document.getElementById('sortBy')) {
+            document.getElementById('sortBy').addEventListener('change', autoSubmitFilter);
+        }
+        if (document.getElementById('filterType')) {
+            document.getElementById('filterType').addEventListener('change', autoSubmitFilter);
+        }
+        if (document.getElementById('filterModel')) {
+            document.getElementById('filterModel').addEventListener('change', autoSubmitFilter);
+        }
+
+        // Navigation removed - page now uses layout navigation only
+    });
+
+    // Price range validation
+    document.getElementById('minPrice').addEventListener('change', function() {
+        const minPrice = parseFloat(this.value);
+        const maxPrice = parseFloat(document.getElementById('maxPrice').value);
+        
+        if (maxPrice && minPrice > maxPrice) {
+            document.getElementById('maxPrice').value = minPrice;
+        }
+    });
+
+    document.getElementById('maxPrice').addEventListener('change', function() {
+        const maxPrice = parseFloat(this.value);
+        const minPrice = parseFloat(document.getElementById('minPrice').value);
+        
+        if (minPrice && maxPrice < minPrice) {
+            document.getElementById('minPrice').value = maxPrice;
+        }
     });
 </script>
 
@@ -89,18 +215,21 @@
         box-sizing: border-box;
     }
 
+    /* Global Styles for Home Page */
     body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
         margin: 0;
-        padding: 20px;
+        padding: 0;
     }
+
+    /* Navigation removed */
 
     /* Main Container */
     .main-container {
         max-width: 1400px;
-        margin: 0 auto;
+        margin: 0 auto 20px auto;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border-radius: 20px;
@@ -136,23 +265,19 @@
         color: white;
     }
 
-    /* Filter Container Styles */
-    .filter-container {
+    /* Enhanced Filter Container Styles */
+    .advanced-filter-container {
         background: white;
-        padding: 20px;
+        padding: 25px;
         border-radius: 15px;
         margin-bottom: 25px;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        flex-wrap: wrap;
         position: relative;
         overflow: hidden;
     }
 
-    .filter-container::before {
+    .advanced-filter-container::before {
         content: '';
         position: absolute;
         top: -50%;
@@ -165,27 +290,43 @@
         pointer-events: none;
     }
 
-    .filter-container:hover::before {
+    .advanced-filter-container:hover::before {
         opacity: 1;
+    }
+
+    .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .filter-row:last-child {
+        margin-bottom: 0;
     }
 
     .filter-group {
         display: flex;
-        align-items: center;
-        gap: 10px;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 150px;
+        flex: 1;
     }
 
-    .filter-container label {
+    .filter-group.price-group {
+        min-width: 120px;
+    }
+
+    .filter-group label {
         font-weight: 600;
         color: #2c3e50;
-        font-size: 14px;
+        font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin: 0;
-        white-space: nowrap;
     }
 
-    .filter-container select,
     .form-control {
         padding: 12px 16px;
         border-radius: 10px;
@@ -195,11 +336,9 @@
         color: #2c3e50;
         background: white;
         transition: all 0.3s ease;
-        min-width: 150px;
         cursor: pointer;
     }
 
-    .filter-container select:focus,
     .form-control:focus {
         outline: none;
         border-color: #667eea;
@@ -207,10 +346,79 @@
         transform: translateY(-1px);
     }
 
-    .filter-container select:hover,
     .form-control:hover {
         border-color: #667eea;
         transform: translateY(-1px);
+    }
+
+    .price-input {
+        cursor: text;
+    }
+
+    /* Filter Buttons */
+    .btn-filter, .btn-clear {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-right: 10px;
+    }
+
+    .btn-filter {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-filter:hover {
+        background: linear-gradient(135deg, #5a6fd8, #6a4190);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-clear {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-clear:hover {
+        background: linear-gradient(135deg, #5a6268, #343a40);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+    }
+
+    /* Display Options */
+    .display-options {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .results-count {
+        color: #6c757d;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .results-count span {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
     }
 
     /* Vehicle Grid Styles */
@@ -399,12 +607,13 @@
     /* Responsive Design */
     @@media (max-width: 768px) {
         body {
-            padding: 10px;
+            padding: 0;
         }
 
         .main-container {
             padding: 20px;
             border-radius: 15px;
+            margin: 10px;
         }
 
         h2 {
@@ -412,24 +621,25 @@
             margin-bottom: 20px;
         }
 
-        .filter-container {
-            padding: 15px;
+        .advanced-filter-container {
+            padding: 20px;
+        }
+
+        .filter-row {
             flex-direction: column;
-            align-items: flex-start;
             gap: 15px;
+            align-items: stretch;
         }
 
         .filter-group {
+            min-width: auto;
             width: 100%;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
         }
 
-        .filter-container select,
-        .form-control {
-            width: 100%;
-            min-width: auto;
+        .display-options {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
         }
 
         .vehicle-grid {
@@ -453,6 +663,12 @@
 
         .btn-buy {
             width: 90%;
+        }
+
+        .btn-filter, .btn-clear {
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 10px;
         }
     }
 

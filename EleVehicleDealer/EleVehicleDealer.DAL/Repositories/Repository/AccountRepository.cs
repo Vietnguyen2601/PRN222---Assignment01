@@ -45,5 +45,13 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             _context.Accounts.Add(account);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<Account?> GetByUsernameWithRolesAsync(string username)
+        {
+            return await _context.Accounts
+                .Include(a => a.AccountRoles)
+                    .ThenInclude(ar => ar.Role)
+                .FirstOrDefaultAsync(a => a.Username == username && a.IsActive);
+        }
     }
 }

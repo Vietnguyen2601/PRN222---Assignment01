@@ -20,11 +20,11 @@ namespace EleVehicleDealer.BLL.Services
 
         public async Task<Account?> LoginAsync(string username, string password)
         {
-            var account = await _accountRepository.GetByUsernameAsync(username);
+            var account = await _accountRepository.GetByUsernameWithRolesAsync(username);
             if (account == null) return null;
 
-            //  Ở đây đang so sánh plain text password,
-            // nếu bạn muốn bảo mật thì nên hash (HMACSHA512 / BCrypt)
+            // ⚠️ Hiện tại bạn đang so sánh plain text, 
+            // thực tế nên hash (BCrypt / HMACSHA512)
             if (account.Password != password) return null;
 
             return account;

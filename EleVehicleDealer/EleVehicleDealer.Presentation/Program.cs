@@ -32,8 +32,12 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler("Home/Error");
     app.UseHsts();
+}
+else
+{
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
@@ -45,6 +49,14 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Vehicle}/{action=Catalog}/{id?}");
+    pattern: "{controller=Home}/{action=Home}/{id?}");
+
+app.MapControllerRoute(
+    name: "account",
+    pattern: "{controller=Account}/{action=Login}/{id?}"); // Route cho Login
+
+app.MapControllerRoute(
+    name: "register",
+    pattern: "{controller=Account}/{action=Register}/{id?}"); // Route cho Register
 
 app.Run();

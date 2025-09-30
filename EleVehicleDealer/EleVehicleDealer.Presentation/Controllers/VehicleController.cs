@@ -101,13 +101,44 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(Vehicle vehicle)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit([Bind("VehicleId,Model,Type,Color,Price")] Vehicle vehicle)
         {
+            if (vehicle == null)
+            {
+                TempData["Error"] = "Invalid vehicle data. No data received.";
+                Console.WriteLine("Error: Vehicle is null");
+                return RedirectToAction(nameof(Index));
+            }
+
+            Console.WriteLine($"Received Vehicle: Id={vehicle.VehicleId}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}");
+
+            if (vehicle.VehicleId <= 0)
+            {
+                TempData["Error"] = "Invalid vehicle data. VehicleId is required.";
+                Console.WriteLine("Error: VehicleId is invalid or zero");
+                return RedirectToAction(nameof(Index));
+            }
+
             if (ModelState.IsValid)
             {
-                // Loại bỏ logic Availability
-                await _vehicleService.UpdateAsync(vehicle);
-                TempData["Message"] = "Vehicle updated successfully!";
+                var updatedVehicle = await _vehicleService.UpdateAsync(vehicle);
+                if (updatedVehicle != null)
+                {
+                    TempData["Message"] = "Vehicle updated successfully!";
+                    Console.WriteLine("Update successful");
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["Error"] = "Vehicle not found or not active.";
+                    Console.WriteLine("Error: Vehicle not found or not active");
+                }
+            }
+            else
+            {
+                Console.WriteLine("ModelState is invalid. Errors: " + string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                TempData["Error"] = "Invalid input data. Please check the form.";
             }
             return RedirectToAction(nameof(Index));
         }
@@ -125,71 +156,6 @@ namespace EleVehicleDealer.Presentation.Controllers
                 TempData["Error"] = "Failed to delete vehicle.";
             }
             return RedirectToAction(nameof(Index));
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Home(int? stationId, string sortBy, string filterType, string filterModel, decimal? minPrice, decimal? maxPrice)
-        {
-            var stations = await _stationService.GetAllStationsAsync();
-            var vehicles = stationId.HasValue && stationId.Value > 0
-                ? await _vehicleService.GetVehiclesByStationAsync(stationId.Value)
-                : await _vehicleService.GetAllVehicleAsync();
-
-            // Apply filters
-            if (!string.IsNullOrEmpty(filterType) && filterType != "All")
-            {
-                vehicles = vehicles.Where(v => v.Type.Contains(filterType, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrEmpty(filterModel) && filterModel != "All")
-            {
-                vehicles = vehicles.Where(v => v.Model.Contains(filterModel, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (minPrice.HasValue)
-            {
-                vehicles = vehicles.Where(v => v.Price >= minPrice.Value);
-            }
-
-            if (maxPrice.HasValue)
-            {
-                vehicles = vehicles.Where(v => v.Price <= maxPrice.Value);
-            }
-
-            // Apply sorting
-            vehicles = sortBy switch
-            {
-                "alphabet_desc" => vehicles.OrderByDescending(v => v.Model),
-                "price" => vehicles.OrderBy(v => v.Price),
-                "price_desc" => vehicles.OrderByDescending(v => v.Price),
-                "type" => vehicles.OrderBy(v => v.Type),
-                "type_desc" => vehicles.OrderByDescending(v => v.Type),
-                _ => vehicles.OrderBy(v => v.Model) // default alphabet
-            };
-
-            if (stations == null || !stations.Any())
-            {
-                TempData["Error"] = "No stations found.";
-            }
-
-            if (vehicles == null || !vehicles.Any())
-            {
-                TempData["Error"] = "No vehicles found for the selected criteria.";
-            }
-
-            // Prepare ViewBag data
-            var allVehicles = await _vehicleService.GetAllVehicleAsync();
-            ViewBag.Stations = stations;
-            ViewBag.SelectedStationId = stationId;
-            ViewBag.SortBy = sortBy;
-            ViewBag.FilterType = filterType;
-            ViewBag.FilterModel = filterModel;
-            ViewBag.MinPrice = minPrice;
-            ViewBag.MaxPrice = maxPrice;
-            ViewBag.VehicleTypes = allVehicles.Select(v => v.Type).Distinct().OrderBy(t => t).ToList();
-            ViewBag.VehicleModels = allVehicles.Select(v => v.Model).Distinct().OrderBy(m => m).ToList();
-
-            return View(vehicles);
         }
     }
 }

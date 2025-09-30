@@ -10,6 +10,7 @@
     var error = TempData["Error"] as string;
 }
 
+<!-- Hiển thị thông báo -->
 @if (!string.IsNullOrEmpty(message))
 {
     <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
@@ -25,51 +26,88 @@
     </div>
 }
 
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h4 class="mb-0">@(editVehicle != null ? "Edit Vehicle" : "Create Vehicle")</h4>
-    </div>
-    <div class="card-body">
-        <form asp-controller="Vehicle" asp-action="@(editVehicle != null ? "Edit" : "Create")" method="post" class="row g-3">
-            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-            @if (editVehicle != null)
-            {
-                <input type="hidden" name="VehicleId" value="@editVehicle.VehicleId" />
-            }
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="Model" class="form-label">Model</label>
-                    <input type="text" name="Model" id="Model" class="form-control" value="@(editVehicle?.Model ?? "")" required />
+@if (editVehicle != null)
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Edit Vehicle</h4>
+        </div>
+        <div class="card-body">
+            <form asp-controller="Vehicle" asp-action="Edit" method="post" class="row g-3" asp-antiforgery="true">
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <input type="hidden" asp-for="@editVehicle.VehicleId" />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Model" class="form-label"></label>
+                        <input asp-for="@editVehicle.Model" class="form-control" required />
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="Type" class="form-label">Type</label>
-                    <input type="text" name="Type" id="Type" class="form-control" value="@(editVehicle?.Type ?? "")" required />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Type" class="form-label"></label>
+                        <input asp-for="@editVehicle.Type" class="form-control" required />
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="Color" class="form-label">Color</label>
-                    <input type="text" name="Color" id="Color" class="form-control" value="@(editVehicle?.Color ?? "")" required />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Color" class="form-label"></label>
+                        <input asp-for="@editVehicle.Color" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="Price" class="form-label">Price</label>
-                    <input type="number" name="Price" id="Price" class="form-control" step="0.01" value="@(editVehicle?.Price ?? 0)" required />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Price" class="form-label"></label>
+                        <input asp-for="@editVehicle.Price" class="form-control" step="0.01" required />
+                    </div>
                 </div>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary btn-lg">@(editVehicle != null ? "Save" : "Create")</button>
-                @if (editVehicle != null)
-                {
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-lg">Save</button>
                     <a asp-action="Index" class="btn btn-secondary btn-lg ms-2">Cancel</a>
-                }
-            </div>
-        </form>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Create Vehicle</h4>
+        </div>
+        <div class="card-body">
+            <form asp-controller="Vehicle" asp-action="Create" method="post" class="row g-3" asp-antiforgery="true">
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@Model.First().Model" class="form-label"></label>
+                        <input asp-for="@Model.First().Model" class="form-control" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@Model.First().Type" class="form-label"></label>
+                        <input asp-for="@Model.First().Type" class="form-control" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@Model.First().Color" class="form-label"></label>
+                        <input asp-for="@Model.First().Color" class="form-control" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@Model.First().Price" class="form-label"></label>
+                        <input asp-for="@Model.First().Price" class="form-control" step="0.01" required />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-lg">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 
 <div class="card shadow-sm mt-4">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">

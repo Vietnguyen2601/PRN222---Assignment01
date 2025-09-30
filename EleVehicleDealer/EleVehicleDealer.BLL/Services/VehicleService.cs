@@ -87,18 +87,34 @@ namespace EleVehicleDealer.BLL.Services
             if (vehicle == null)
                 throw new ArgumentNullException(nameof(vehicle));
 
-            var existingVehicle = await _context.Vehicles.FindAsync(vehicle);
+            Console.WriteLine($"Updating Vehicle: Id={vehicle.VehicleId}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}");
+            if (vehicle.VehicleId <= 0)
+                throw new ArgumentException("VehicleId is required and must be a positive integer.", nameof(vehicle.VehicleId));
+
+            var existingVehicle = await _context.Vehicles.FindAsync(vehicle.VehicleId);
             if (existingVehicle == null || !existingVehicle.IsActive)
+            {
+                Console.WriteLine($"Error: Vehicle with Id={vehicle.VehicleId} not found or not active");
                 return null;
+            }
 
             existingVehicle.Model = vehicle.Model;
             existingVehicle.Type = vehicle.Type;
             existingVehicle.Color = vehicle.Color;
             existingVehicle.Price = vehicle.Price;
+            existingVehicle.UpdatedAt = DateTime.Now;
 
-
-            await _context.SaveChangesAsync();
-            return existingVehicle;
+            try
+            {
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Update successful for VehicleId={vehicle.VehicleId}");
+                return existingVehicle;
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"DbUpdateException: {ex.InnerException?.Message ?? ex.Message}");
+                return null;
+            }
         }
 
         public async Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId)

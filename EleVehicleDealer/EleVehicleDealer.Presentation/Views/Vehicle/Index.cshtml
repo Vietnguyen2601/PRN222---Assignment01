@@ -30,34 +30,45 @@
 {
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Edit Vehicle</h4>
+            <h4 class="mb-0">Chỉnh sửa xe</h4>
         </div>
         <div class="card-body">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @TempData["Error"]
+                </div>
+            }
+            <!-- Sử dụng model Vehicle trực tiếp -->
             <form asp-controller="Vehicle" asp-action="Edit" method="post" class="row g-3" asp-antiforgery="true">
                 @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-                <input type="hidden" asp-for="@editVehicle.VehicleId" />
+                <input type="hidden" name="VehicleId" value="@editVehicle.VehicleId" />
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Model" class="form-label"></label>
-                        <input asp-for="@editVehicle.Model" class="form-control" required />
+                        <label for="Model" class="form-label">Model</label>
+                        <input name="Model" class="form-control" value="@editVehicle.Model" required />
+                        <span asp-validation-for="@editVehicle.Model" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Type" class="form-label"></label>
-                        <input asp-for="@editVehicle.Type" class="form-control" required />
+                        <label for="Type" class="form-label">Loại</label>
+                        <input name="Type" class="form-control" value="@editVehicle.Type" required />
+                        <span asp-validation-for="@editVehicle.Type" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Color" class="form-label"></label>
-                        <input asp-for="@editVehicle.Color" class="form-control" />
+                        <label for="Color" class="form-label">Màu sắc</label>
+                        <input name="Color" class="form-control" value="@editVehicle.Color" />
+                        <span asp-validation-for="@editVehicle.Color" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Price" class="form-label"></label>
-                        <input asp-for="@editVehicle.Price" class="form-control" step="0.01" required />
+                        <label for="Price" class="form-label">Giá</label>
+                        <input name="Price" class="form-control" step="0.01" value="@editVehicle.Price" required />
+                        <span asp-validation-for="@editVehicle.Price" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="col-12">

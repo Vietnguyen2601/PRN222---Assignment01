@@ -13,5 +13,11 @@ namespace EleVehicleDealer.BLL.Interfaces
         Task<bool> ExistsAsync(string username);  
         Task<bool> ExistsEmailAsync(string email);  
         Task RegisterAsync(Account account);
+
+        Task<List<Account>> GetAllAsync();
+        Task<Account?> GetByIdAsync(int id);
+        Task<int> CreateAsync(Account account);
+        Task<int> UpdateAsync(Account account);
+        Task<bool> SoftDeleteAsync(int id);
     }
 }

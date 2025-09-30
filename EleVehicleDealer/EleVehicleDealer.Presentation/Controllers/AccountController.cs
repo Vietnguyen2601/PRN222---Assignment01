@@ -41,7 +41,7 @@ namespace EleVehicleDealer.Presentation.Controllers
 
             if (roles.Contains("Admin") || roles.Contains("Staff"))
             {
-                return RedirectToAction("Index", "Vehicle");
+                return RedirectToAction("Index", "Account");
             }
             else if (roles.Contains("Customer"))
             {
@@ -106,6 +106,65 @@ namespace EleVehicleDealer.Presentation.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var accounts = await _accountService.GetAllAsync();
+            return View("AccountManagement", accounts.ToList());
+        }
+
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([Bind("Username,Password,Email,ContactNumber,IsActive")] Account account)
+        {
+            if (!ModelState.IsValid) return RedirectToAction(nameof(Index));
+            account.CreatedAt = DateTime.Now;
+            account.IsActive = Request.Form["IsActive"] == "on" || Request.Form["IsActive"] == "true";
+            await _accountService.CreateAsync(account);
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            var account = await _accountService.GetByIdAsync(id);
+            if (account == null) return NotFound();
+            return View(account);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit([Bind("AccountId,Username,Password,Email,ContactNumber,IsActive")] Account account)
+        {
+            if (!ModelState.IsValid)
+                return RedirectToAction(nameof(Index));
+
+            var dbAccount = await _accountService.GetByIdAsync(account.AccountId);
+            if (dbAccount == null)
+                return RedirectToAction(nameof(Index));
+
+            // Nếu password để trống, giữ nguyên password cũ
+            if (string.IsNullOrWhiteSpace(account.Password))
+                account.Password = dbAccount.Password;
+
+            account.UpdatedAt = DateTime.Now; // Sửa lỗi DateTime overflow
+
+            await _accountService.UpdateAsync(account);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ActionName("Delete")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _accountService.SoftDeleteAsync(id);
+
+            if (!result)
+                return Json(new { success = false, message = "Account not found" });
+
+            return Json(new { success = true, message = "Delete thành công!" });
         }
     }
 }

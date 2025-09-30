@@ -1,7 +1,6 @@
 ﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @using EleVehicleDealer.DAL.EntityModels
 @model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     var username = Context.Session?.GetString("Username") ?? string.Empty;
     var isLoggedIn = !string.IsNullOrEmpty(username);
@@ -11,11 +10,11 @@
     var error = ViewBag.Error as string ?? TempData["Error"] as string ?? string.Empty;
     var vehicleTypes = ViewBag.VehicleTypes as List<string> ?? new List<string>();
     var vehicleModels = ViewBag.VehicleModels as List<string> ?? new List<string>();
-    var sortBy = ViewBag.SortBy as string ?? "";
-    var filterType = ViewBag.FilterType as string ?? "";
-    var filterModel = ViewBag.FilterModel as string ?? "";
-    var minPrice = ViewBag.MinPrice as decimal? ?? null;
-    var maxPrice = ViewBag.MaxPrice as decimal? ?? null;
+    var sortBy = ViewBag.SortBy as string ?? "price"; // Mặc định là "price"
+    var filterType = ViewBag.FilterType as string ?? "Sedan"; // Mặc định là "Sedan"
+    var filterModel = ViewBag.FilterModel as string ?? "Model X"; // Mặc định là "Model X"
+    var minPrice = ViewBag.MinPrice as decimal? ?? 10000m; // Mặc định là 10000
+    var maxPrice = ViewBag.MaxPrice as decimal? ?? 50000m; // Mặc định là 50000
 }
 
 <header class="site-header">
@@ -63,36 +62,55 @@
         <div class="filter-row">
             <div class="filter-group">
                 <label for="sortBy">Sort By:</label>
-                <select id="sortBy" name="sortBy" class="form-control">
-                    <!option value="alphabet" selected="@(sortBy == "alphabet" ? "selected" : "")">Alphabet (A-Z)</!option>
-                    <!option value="alphabet_desc" selected="@(sortBy == "alphabet_desc" ? "selected" : "")">Alphabet (Z-A)</!option>
-                    <!option value="price" selected="@(sortBy == "price" ? "selected" : "")">Price (Low to High)</!option>
-                    <!option value="price_desc" selected="@(sortBy == "price_desc" ? "selected" : "")">Price (High to Low)</!option>
-                    <!option value="type" selected="@(sortBy == "type" ? "selected" : "")">Type (A-Z)</!option>
-                    <!option value="type_desc" selected="@(sortBy == "type_desc" ? "selected" : "")">Type (Z-A)</!option>
+                <select id="sortBy" name="sortBy" class="form-control" onchange="autoSubmitFilter()">
+                    <option value="All">All</option>
+                    <option value="alphabet">Alphabet (A-Z)</option>
+                    <option value="alphabet_desc">Alphabet (Z-A)</option>
+                    <option value="price">Price (Low to High)</option>
+                    <option value="price_desc">Price (High to Low)</option>
+                    <option value="type">Type (A-Z)</option>
+                    <option value="type_desc">Type (Z-A)</option>
                 </select>
+                @{
+                    var selectedSortBy = sortBy;
+                }
+                <script>
+                    document.getElementById('sortBy').value = '@selectedSortBy' === 'All' ? 'All' : '@selectedSortBy';
+                </script>
             </div>
 
             <div class="filter-group">
                 <label for="filterType">Filter by Type:</label>
-                <select id="filterType" name="filterType" class="form-control">
-                    <!option value="All" selected="@(string.IsNullOrEmpty(filterType) || filterType == "All" ? "selected" : "")">All Types</!option>
+                <select id="filterType" name="filterType" class="form-control" onchange="autoSubmitFilter()">
+                    <option value="All">All Types</option>
                     @foreach (var type in vehicleTypes)
                     {
-                        <!option value="@type" selected="@(filterType == type ? "selected" : "")">@type</!option>
+                        <option value="@type">@type</option>
                     }
                 </select>
+                @{
+                    var selectedFilterType = filterType;
+                }
+                <script>
+                    document.getElementById('filterType').value = '@selectedFilterType' === 'All' ? 'All' : '@selectedFilterType';
+                </script>
             </div>
 
             <div class="filter-group">
                 <label for="filterModel">Filter by Model:</label>
-                <select id="filterModel" name="filterModel" class="form-control">
-                    <!option value="All" selected="@(string.IsNullOrEmpty(filterModel) || filterModel == "All" ? "selected" : "")">All Models</!option>
+                <select id="filterModel" name="filterModel" class="form-control" onchange="autoSubmitFilter()">
+                    <option value="All">All Models</option>
                     @foreach (var vehicleModel in vehicleModels)
                     {
-                        <!option value="@vehicleModel" selected="@(filterModel == vehicleModel ? "selected" : "")">@vehicleModel</!option>
+                        <option value="@vehicleModel">@vehicleModel</option>
                     }
                 </select>
+                @{
+                    var selectedFilterModel = filterModel;
+                }
+                <script>
+                    document.getElementById('filterModel').value = '@selectedFilterModel' === 'All' ? 'All' : '@selectedFilterModel';
+                </script>
             </div>
         </div>
 
@@ -100,38 +118,29 @@
             <div class="filter-group price-group">
                 <label for="minPrice">Min Price:</label>
                 <input type="number" id="minPrice" name="minPrice" class="form-control price-input"
-                       placeholder="Min" value="@minPrice" step="1000" min="0">
+                       placeholder="Min" value="@minPrice" step="1000" min="0" onchange="autoSubmitFilter()">
             </div>
 
             <div class="filter-group price-group">
                 <label for="maxPrice">Max Price:</label>
                 <input type="number" id="maxPrice" name="maxPrice" class="form-control price-input"
-                       placeholder="Max" value="@maxPrice" step="1000" min="0">
+                       placeholder="Max" value="@maxPrice" step="1000" min="0" onchange="autoSubmitFilter()">
             </div>
 
             <div class="filter-group">
-                <button type="submit" class="btn-filter">Apply Filters</button>
+                <button type="submit" class="btn-filter" style="display:none;">Apply Filters</button>
                 <button type="button" class="btn-clear" onclick="clearFilters()">Clear All</button>
             </div>
         </div>
     </form>
 
     <div class="display-options">
-        <div class="filter-group">
-            <label for="cardsPerRow">Cards per row:</label>
-            <select id="cardsPerRow" class="form-control" onchange="adjustGridColumns()">
-                <option value="3">3 Cards</option>
-                <option value="4" selected>4 Cards</option>
-                <option value="5">5 Cards</option>
-                <option value="6">6 Cards</option>
-            </select>
-        </div>
         <div class="results-count">
             <span>Showing @Model.Count() vehicles</span>
         </div>
     </div>
 
-    <div class="vehicle-grid" id="vehicleGrid" data-columns="4">
+    <div class="vehicle-grid" id="vehicleGrid">
         @foreach (var v in Model)
         {
             <div class="vehicle-card">
@@ -153,19 +162,8 @@
 </div>
 
 <script>
-    function adjustGridColumns() {
-        const grid = document.getElementById('vehicleGrid');
-        const cardsPerRow = document.getElementById('cardsPerRow').value;
-        grid.setAttribute('data-columns', cardsPerRow);
-
-        grid.style.transition = 'all 0.3s ease';
-        setTimeout(() => {
-            grid.style.transition = '';
-        }, 300);
-    }
-
     function clearFilters() {
-        document.getElementById('sortBy').value = 'alphabet';
+        document.getElementById('sortBy').value = 'All';
         document.getElementById('filterType').value = 'All';
         document.getElementById('filterModel').value = 'All';
         document.getElementById('minPrice').value = '';
@@ -174,12 +172,16 @@
     }
 
     function autoSubmitFilter() {
+        const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+        const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+
+        if (minPrice > maxPrice) {
+            document.getElementById('maxPrice').value = minPrice;
+        }
         document.getElementById('filterForm').submit();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        adjustGridColumns();
-
         if (document.getElementById('sortBy')) {
             document.getElementById('sortBy').addEventListener('change', autoSubmitFilter);
         }
@@ -191,23 +193,8 @@
         }
     });
 
-    document.getElementById('minPrice').addEventListener('change', function() {
-        const minPrice = parseFloat(this.value);
-        const maxPrice = parseFloat(document.getElementById('maxPrice').value);
-
-        if (maxPrice && minPrice > maxPrice) {
-            document.getElementById('maxPrice').value = minPrice;
-        }
-    });
-
-    document.getElementById('maxPrice').addEventListener('change', function() {
-        const maxPrice = parseFloat(this.value);
-        const minPrice = parseFloat(document.getElementById('minPrice').value);
-
-        if (minPrice && maxPrice < minPrice) {
-            document.getElementById('minPrice').value = maxPrice;
-        }
-    });
+    document.getElementById('minPrice').addEventListener('change', autoSubmitFilter);
+    document.getElementById('maxPrice').addEventListener('change', autoSubmitFilter);
 
     document.getElementById('loginLink')?.addEventListener('click', function(e) {
         console.log('Login link clicked, redirecting to /Account/Login');
@@ -219,15 +206,22 @@
 </script>
 
 <style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
+        --secondary-gradient: linear-gradient(135deg, #28a745, #20c997);
+        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
     .site-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--primary-gradient);
         padding: 15px 0;
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-light);
     }
 
     .header-container {
@@ -241,17 +235,22 @@
 
     .logo-section .logo {
         color: white;
-        font-size: 1.8rem;
+        font-size: 2rem;
         font-weight: 700;
         text-decoration: none;
         text-transform: uppercase;
         letter-spacing: 1px;
+        transition: color 0.3s ease;
     }
+
+        .logo-section .logo:hover {
+            color: #ffd700;
+        }
 
     .main-navigation ul {
         list-style: none;
         display: flex;
-        gap: 25px;
+        gap: 30px;
         margin: 0;
         padding: 0;
     }
@@ -260,7 +259,7 @@
         color: white;
         text-decoration: none;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 15px;
         text-transform: uppercase;
         transition: color 0.3s ease;
     }
@@ -272,21 +271,22 @@
     .auth-section {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 20px;
     }
 
         .auth-section a,
         .auth-section span {
             color: white;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
         }
 
     .btn-login, .btn-register, .btn-logout, .btn-admin {
-        padding: 8px 20px;
-        border-radius: 20px;
+        padding: 10px 25px;
+        border-radius: 25px;
         text-decoration: none;
         transition: all 0.3s ease;
+        font-size: 15px;
     }
 
     .btn-login {
@@ -295,69 +295,76 @@
 
         .btn-login:hover {
             background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
         }
 
     .btn-register {
-        background: #28a745;
+        background: var(--secondary-gradient);
     }
 
         .btn-register:hover {
-            background: #218838;
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-2px);
         }
 
     .btn-logout {
-        background: #dc3545;
+        background: linear-gradient(135deg, #dc3545, #c82333);
     }
 
         .btn-logout:hover {
-            background: #c82333;
+            background: linear-gradient(135deg, #bd2130, #a71d2a);
+            transform: translateY(-2px);
         }
 
     .btn-admin {
-        background: #17a2b8;
+        background: linear-gradient(135deg, #17a2b8, #138496);
     }
 
         .btn-admin:hover {
-            background: #138496;
+            background: linear-gradient(135deg, #117a8b, #0f6677);
+            transform: translateY(-2px);
         }
 
     .welcome {
-        margin-right: 10px;
+        margin-right: 15px;
+        font-size: 16px;
     }
 
     body {
-        padding-top: 70px;
+        padding-top: 80px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .main-container {
         max-width: 1400px;
-        margin: 0 auto 20px auto;
+        margin: 20px auto;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        box-shadow: var(--shadow-light);
     }
 
     h2 {
         text-align: center;
         color: #2c3e50;
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         font-weight: 700;
-        margin-bottom: 30px;
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        margin-bottom: 40px;
+        background: var(--primary-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
     .alert {
-        padding: 15px 20px;
-        border-radius: 12px;
-        margin-bottom: 25px;
+        padding: 15px 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
         font-weight: 500;
         border: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-light);
     }
 
     .alert-danger {
@@ -367,27 +374,32 @@
 
     .advanced-filter-container {
         background: white;
-        padding: 25px;
+        padding: 15px;
         border-radius: 15px;
-        margin-bottom: 25px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-light);
         border: 1px solid rgba(255, 255, 255, 0.2);
         position: relative;
         overflow: hidden;
+        transition: box-shadow 0.3s ease;
     }
+
+        .advanced-filter-container:hover {
+            box-shadow: var(--shadow-hover);
+        }
 
     .filter-row {
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 15px;
         flex-wrap: wrap;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
 
     .filter-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 5px;
         min-width: 150px;
         flex: 1;
     }
@@ -406,10 +418,10 @@
         }
 
     .form-control {
-        padding: 12px 16px;
+        padding: 8px 12px;
         border-radius: 10px;
         border: 2px solid #e1e8ed;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: #2c3e50;
         background: white;
@@ -417,16 +429,22 @@
         cursor: pointer;
     }
 
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 6px rgba(102, 126, 234, 0.3);
+            outline: none;
+        }
+
     .price-input {
         cursor: text;
     }
 
     .btn-filter, .btn-clear {
-        padding: 12px 24px;
+        padding: 8px 20px;
         border: none;
         border-radius: 10px;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 13px;
         cursor: pointer;
         transition: all 0.3s ease;
         text-transform: uppercase;
@@ -435,27 +453,27 @@
     }
 
     .btn-filter {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        background: var(--primary-gradient);
         color: white;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        box-shadow: var(--shadow-light);
     }
 
         .btn-filter:hover {
             background: linear-gradient(135deg, #5a6fd8, #6a4190);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-hover);
         }
 
     .btn-clear {
         background: linear-gradient(135deg, #6c757d, #495057);
         color: white;
-        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        box-shadow: var(--shadow-light);
     }
 
         .btn-clear:hover {
             background: linear-gradient(135deg, #5a6268, #343a40);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+            box-shadow: var(--shadow-hover);
         }
 
     .display-options {
@@ -463,9 +481,9 @@
         padding: 15px 20px;
         border-radius: 12px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-light);
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         flex-wrap: wrap;
         gap: 15px;
@@ -478,7 +496,7 @@
     }
 
         .results-count span {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -487,17 +505,18 @@
 
     .vehicle-grid {
         display: grid;
-        gap: 25px;
-        margin-top: 30px;
-        padding: 10px;
-        grid-template-columns: repeat(4, 1fr); /* Mặc định 4 cột */
+        gap: 25px; /* Tăng gap từ 20px */
+        margin-top: 40px; /* Tăng margin từ 30px */
+        padding: 15px; /* Tăng padding từ 10px */
+        grid-template-columns: repeat(4, 1fr);
+        transition: all 0.3s ease;
     }
 
     .vehicle-card {
         background: white;
-        border-radius: 20px;
+        border-radius: 15px;
         padding: 0;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-light);
         text-align: center;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border: 2px solid transparent;
@@ -505,42 +524,24 @@
         position: relative;
     }
 
-        .vehicle-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 0;
-        }
-
-        .vehicle-card:hover::before {
-            opacity: 0.05;
-        }
-
         .vehicle-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-hover);
             border-color: rgba(102, 126, 234, 0.3);
         }
 
     .image-container {
         width: 100%;
-        height: 220px;
+        height: 250px; /* Tăng height từ 200px */
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         display: flex;
         justify-content: center;
         align-items: center;
-        border-radius: 20px 20px 0 0;
+        border-radius: 15px 15px 0 0;
         margin-bottom: 0;
         position: relative;
         overflow: hidden;
         border: none;
-        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
     }
 
         .image-container img {
@@ -548,7 +549,6 @@
             height: 100%;
             object-fit: cover;
             transition: transform 0.4s ease;
-            border-radius: 0;
         }
 
     .vehicle-card:hover .image-container img {
@@ -556,14 +556,14 @@
     }
 
     .vehicle-card-content {
-        padding: 25px 20px;
+        padding: 20px 15px; /* Tăng padding từ 15px 10px */
         position: relative;
         z-index: 1;
     }
 
     .vehicle-card h4 {
-        margin: 0 0 15px 0;
-        font-size: 1.4rem;
+        margin: 0 0 15px 0; /* Tăng margin từ 0 0 10px 0 */
+        font-size: 1.5rem; /* Tăng font-size từ 1.2rem */
         color: #2c3e50;
         font-weight: 700;
         text-transform: uppercase;
@@ -571,22 +571,22 @@
     }
 
     .vehicle-card p {
-        margin: 8px 0;
+        margin: 10px 0; /* Tăng margin từ 5px 0 */
         color: #6c757d;
-        font-size: 14px;
+        font-size: 15px; /* Tăng font-size từ 13px */
         font-weight: 500;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 5px 0;
+        padding: 5px 0; /* Tăng padding từ 3px 0 */
     }
 
         .vehicle-card p.price {
-            font-size: 1.2rem;
+            font-size: 1.3rem; /* Tăng font-size từ 1.1rem */
             font-weight: 700;
-            color: #28a745;
-            margin-top: 15px;
-            padding-top: 15px;
+            color: var(--secondary-gradient);
+            margin-top: 20px; /* Tăng margin từ 15px */
+            padding-top: 15px; /* Tăng padding từ 10px */
             border-top: 2px solid #f8f9fa;
         }
 
@@ -594,52 +594,34 @@
             color: #495057;
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 12px;
+            font-size: 13px; /* Tăng font-size từ 12px */
             letter-spacing: 0.5px;
         }
 
     .btn-buy {
-        margin-top: 20px;
-        padding: 14px 30px;
-        background: linear-gradient(135deg, #28a745, #20c997);
+        margin-top: 20px; /* Tăng margin từ 15px */
+        padding: 12px 25px; /* Tăng padding từ 10px 20px */
+        background: var(--secondary-gradient);
         color: white;
         border: none;
-        border-radius: 25px;
+        border-radius: 20px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 15px; /* Tăng font-size từ 14px */
         text-transform: uppercase;
         letter-spacing: 1px;
         transition: all 0.3s ease;
-        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
-        position: relative;
-        overflow: hidden;
-        width: 80%;
+        box-shadow: var(--shadow-light);
     }
-
-        .btn-buy::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s ease;
-        }
-
-        .btn-buy:hover::before {
-            left: 100%;
-        }
 
         .btn-buy:hover {
             background: linear-gradient(135deg, #218838, #1ea085);
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(40, 167, 69, 0.4);
+            box-shadow: var(--shadow-hover);
         }
 
         .btn-buy:active {
             transform: translateY(0);
-            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.3);
+            box-shadow: var(--shadow-light);
         }
 </style>

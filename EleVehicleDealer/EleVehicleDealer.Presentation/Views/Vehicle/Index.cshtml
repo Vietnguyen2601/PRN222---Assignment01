@@ -8,33 +8,51 @@
 <div class="container">
     <h2 class="title">Account Management</h2>
 
-    <!-- Create New Account -->
-    <div class="box">
-        <div class="box-header blue">Create New Account</div>
-        <div class="box-body">
-            <form asp-action="Create" asp-controller="Account" method="post" class="form-grid">
-                <div>
-                    <label for="Username">Username</label>
-                    <input name="Username" class="form-control" required />
+@if (editVehicle != null)
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Chỉnh sửa xe</h4>
+        </div>
+        <div class="card-body">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @TempData["Error"]
                 </div>
-                <div>
-                    <label for="Password">Password</label>
-                    <input name="Password" type="password" required />
+            }
+            <!-- Sử dụng model Vehicle trực tiếp -->
+            <form asp-controller="Vehicle" asp-action="Edit" method="post" class="row g-3" asp-antiforgery="true">
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <input type="hidden" name="VehicleId" value="@editVehicle.VehicleId" />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="Model" class="form-label">Model</label>
+                        <input name="Model" class="form-control" value="@editVehicle.Model" required />
+                        <span asp-validation-for="@editVehicle.Model" class="text-danger"></span>
+                    </div>
                 </div>
-                <div>
-                    <label for="Email">Email</label>
-                    <input name="Email" type="email" required />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Type" class="form-label"></label>
+                        <input asp-for="@editVehicle.Type" class="form-control" required />
+                    </div>
                 </div>
-                <div>
-                    <label for="ContactNumber">Contact Number</label>
-                    <input name="ContactNumber" />
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Color" class="form-label"></label>
+                        <input asp-for="@editVehicle.Color" class="form-control" />
+                    </div>
                 </div>
-                <div>
-                    <input type="checkbox" name="IsActive" checked />
-                    <label for="IsActive">Active</label>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="@editVehicle.Price" class="form-label"></label>
+                        <input asp-for="@editVehicle.Price" class="form-control" step="0.01" required />
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn green">Create</button>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-lg">Save</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-lg ms-2">Cancel</a>
                 </div>
             </form>
         </div>

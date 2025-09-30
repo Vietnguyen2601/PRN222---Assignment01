@@ -29,11 +29,28 @@ namespace EleVehicleDealer.Presentation.Controllers
                 return View();
             }
 
-            // Đăng nhập thành công, có thể lưu session
+            // Đăng nhập thành công -> lưu session
             HttpContext.Session.SetString("Username", account.Username);
             HttpContext.Session.SetInt32("AccountId", account.AccountId);
 
-            return RedirectToAction("Index", "Vehicle");
+            // Lấy role của account
+            var roles = account.AccountRoles
+                .Where(ar => ar.IsActive && ar.Role.IsActive)
+                .Select(ar => ar.Role.RoleName)
+                .ToList();
+
+            if (roles.Contains("Admin") || roles.Contains("Staff"))
+            {
+                return RedirectToAction("Index", "Vehicle");
+            }
+            else if (roles.Contains("Customer"))
+            {
+                return RedirectToAction("Home", "Home");
+            }
+
+            // Trường hợp không có role
+            ViewBag.Error = "Tài khoản chưa được phân quyền!";
+            return View();
         }
 
         // GET: Register

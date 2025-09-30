@@ -14,5 +14,6 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
         Task<bool> ExistsAsync(string username);
         Task<bool> ExistsEmailAsync(string email);
         Task AddAsync(Account account);
+        Task<Account?> GetByUsernameWithRolesAsync(string username);
     }
 }

@@ -41,10 +41,12 @@ namespace EleVehicleDealer.Presentation.Controllers
 
             if (roles.Contains("Admin") || roles.Contains("Staff"))
             {
-                return RedirectToAction("Index", "Account");
+                HttpContext.Session.SetString("Role", roles.FirstOrDefault() ?? "Staff");
+                return RedirectToAction("Manage", "Home");
             }
             else if (roles.Contains("Customer"))
             {
+                HttpContext.Session.SetString("Role", "Customer");
                 return RedirectToAction("Home", "Home");
             }
 
@@ -137,6 +139,7 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit([Bind("AccountId,Username,Password,Email,ContactNumber,IsActive")] Account account)
         {
             if (!ModelState.IsValid)
@@ -146,11 +149,10 @@ namespace EleVehicleDealer.Presentation.Controllers
             if (dbAccount == null)
                 return RedirectToAction(nameof(Index));
 
-            // Nếu password để trống, giữ nguyên password cũ
             if (string.IsNullOrWhiteSpace(account.Password))
                 account.Password = dbAccount.Password;
 
-            account.UpdatedAt = DateTime.Now; // Sửa lỗi DateTime overflow
+            account.UpdatedAt = DateTime.Now;
 
             await _accountService.UpdateAsync(account);
             return RedirectToAction(nameof(Index));

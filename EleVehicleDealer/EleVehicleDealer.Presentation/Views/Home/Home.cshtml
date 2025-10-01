@@ -5,7 +5,7 @@
     var username = Context.Session?.GetString("Username") ?? string.Empty;
     var isLoggedIn = !string.IsNullOrEmpty(username);
     var accountId = Context.Session?.GetInt32("AccountId") ?? 0;
-    var userRole = "Customer";
+    var userRole = Context.Session?.GetString("Role") ?? "Customer"; // Lấy role từ session
 
     var error = ViewBag.Error as string ?? TempData["Error"] as string ?? string.Empty;
     var vehicleTypes = ViewBag.VehicleTypes as List<string> ?? new List<string>();
@@ -35,9 +35,13 @@
             @if (isLoggedIn)
             {
                 <span class="welcome">Welcome, @username</span>
+                @if (userRole == "Admin" || userRole == "Staff")
+                {
+                    <a asp-controller="Home" asp-action="Manage" class="nav-link">Manage</a>
+                }
                 @if (userRole == "Admin")
                 {
-                    <a asp-controller="Admin" asp-action="Dashboard" class="btn-admin">Admin Panel</a>
+                    <a asp-controller="Admin" asp-action="Dashboard" class="nav-link">Admin Panel</a>
                 }
                 <a asp-controller="Account" asp-action="Logout" class="btn-logout">Logout</a>
             }
@@ -281,7 +285,7 @@
             font-size: 15px;
         }
 
-    .btn-login, .btn-register, .btn-logout, .btn-admin {
+    .btn-login, .btn-register {
         padding: 10px 25px;
         border-radius: 25px;
         text-decoration: none;
@@ -308,6 +312,11 @@
         }
 
     .btn-logout {
+        padding: 10px 25px;
+        border-radius: 25px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-size: 15px;
         background: linear-gradient(135deg, #dc3545, #c82333);
     }
 
@@ -316,13 +325,17 @@
             transform: translateY(-2px);
         }
 
-    .btn-admin {
-        background: linear-gradient(135deg, #17a2b8, #138496);
+    .nav-link {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        transition: color 0.3s ease;
     }
 
-        .btn-admin:hover {
-            background: linear-gradient(135deg, #117a8b, #0f6677);
-            transform: translateY(-2px);
+        .nav-link:hover {
+            color: #ffd700;
         }
 
     .welcome {
@@ -505,9 +518,9 @@
 
     .vehicle-grid {
         display: grid;
-        gap: 25px; /* Tăng gap từ 20px */
-        margin-top: 40px; /* Tăng margin từ 30px */
-        padding: 15px; /* Tăng padding từ 10px */
+        gap: 25px;
+        margin-top: 40px;
+        padding: 15px;
         grid-template-columns: repeat(4, 1fr);
         transition: all 0.3s ease;
     }
@@ -532,7 +545,7 @@
 
     .image-container {
         width: 100%;
-        height: 250px; /* Tăng height từ 200px */
+        height: 250px;
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         display: flex;
         justify-content: center;
@@ -556,14 +569,14 @@
     }
 
     .vehicle-card-content {
-        padding: 20px 15px; /* Tăng padding từ 15px 10px */
+        padding: 20px 15px;
         position: relative;
         z-index: 1;
     }
 
     .vehicle-card h4 {
-        margin: 0 0 15px 0; /* Tăng margin từ 0 0 10px 0 */
-        font-size: 1.5rem; /* Tăng font-size từ 1.2rem */
+        margin: 0 0 15px 0;
+        font-size: 1.5rem;
         color: #2c3e50;
         font-weight: 700;
         text-transform: uppercase;
@@ -571,22 +584,22 @@
     }
 
     .vehicle-card p {
-        margin: 10px 0; /* Tăng margin từ 5px 0 */
+        margin: 10px 0;
         color: #6c757d;
-        font-size: 15px; /* Tăng font-size từ 13px */
+        font-size: 15px;
         font-weight: 500;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 5px 0; /* Tăng padding từ 3px 0 */
+        padding: 5px 0;
     }
 
         .vehicle-card p.price {
-            font-size: 1.3rem; /* Tăng font-size từ 1.1rem */
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--secondary-gradient);
-            margin-top: 20px; /* Tăng margin từ 15px */
-            padding-top: 15px; /* Tăng padding từ 10px */
+            margin-top: 20px;
+            padding-top: 15px;
             border-top: 2px solid #f8f9fa;
         }
 
@@ -594,20 +607,20 @@
             color: #495057;
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 13px; /* Tăng font-size từ 12px */
+            font-size: 13px;
             letter-spacing: 0.5px;
         }
 
     .btn-buy {
-        margin-top: 20px; /* Tăng margin từ 15px */
-        padding: 12px 25px; /* Tăng padding từ 10px 20px */
+        margin-top: 20px;
+        padding: 12px 25px;
         background: var(--secondary-gradient);
         color: white;
         border: none;
         border-radius: 20px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 15px; /* Tăng font-size từ 14px */
+        font-size: 15px;
         text-transform: uppercase;
         letter-spacing: 1px;
         transition: all 0.3s ease;

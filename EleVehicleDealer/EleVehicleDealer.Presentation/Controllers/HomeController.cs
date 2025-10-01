@@ -3,6 +3,7 @@ using EleVehicleDealer.BLL.Services;
 using EleVehicleDealer.DAL.DBContext;
 using EleVehicleDealer.DAL.EntityModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EleVehicleDealer.Presentation.Controllers
 {
@@ -17,6 +18,10 @@ namespace EleVehicleDealer.Presentation.Controllers
             _vehicleService = vehicleService;
         }
 
+        public IActionResult Index()
+        {
+            return RedirectToAction("Home"); // Redirect đến action Home
+        }
         public async Task<IActionResult> Home()
         {
             var vehicles = await _vehicleService.GetAllVehicleAsync();
@@ -100,6 +105,25 @@ namespace EleVehicleDealer.Presentation.Controllers
         public IActionResult Contact()
         {
             return View();
+        }
+
+        public async Task<IActionResult> Manage()
+        {
+            if (HttpContext.Session.GetString("Username") == null ||
+                !new[] { "Admin", "Staff" }.Contains(HttpContext.Session.GetString("Role")))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var vehicles = await _context.Vehicles.ToListAsync();
+            var accounts = await _context.Accounts.ToListAsync();
+            var orders = await _context.Orders.ToListAsync();
+
+            ViewBag.Vehicles = vehicles;
+            ViewBag.Accounts = accounts;
+            ViewBag.Orders = orders;
+
+            return View(); // Sử dụng Views/Home/Manage.cshtml để render _ManagementPage
         }
     }
 }

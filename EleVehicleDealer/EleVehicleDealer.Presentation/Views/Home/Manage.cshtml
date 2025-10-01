@@ -1,0 +1,687 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using EleVehicleDealer.DAL.EntityModels
+@model dynamic
+@{
+    var username = Context.Session?.GetString("Username") ?? string.Empty;
+    var vehicles = ViewBag.Vehicles as List<Vehicle> ?? new List<Vehicle>();
+    var accounts = ViewBag.Accounts as List<Account> ?? new List<Account>();
+    var orders = ViewBag.Orders as List<Order> ?? new List<Order>();
+}
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="logo-section">
+            <a asp-controller="Home" asp-action="Manage" class="logo">Admin Manage</a>
+        </div>
+        <nav class="main-navigation" style="flex-grow: 1; display: flex; justify-content: center;">
+            <ul>
+                <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li><a asp-controller="Home" asp-action="Manage">Manage</a></li>
+            </ul>
+        </nav>
+        <div class="auth-section">
+            <span class="welcome">Welcome, Admin @username</span>
+            <a asp-controller="Account" asp-action="Logout" class="btn-logout">Logout</a>
+        </div>
+    </div>
+</header>
+
+<div class="admin-container">
+    <aside class="admin-sidebar">
+        <ul class="nav-list">
+            <li><a href="#user-tab" class="nav-link active" onclick="showTab('user-tab')">User Management</a></li>
+            <li><a href="#vehicle-tab" class="nav-link" onclick="showTab('vehicle-tab')">Vehicle Management</a></li>
+            <li><a href="#order-tab" class="nav-link" onclick="showTab('order-tab')">Order Management</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <!-- User Management Tab -->
+        <section id="user-tab" class="admin-tab active">
+            <h3>User Management</h3>
+            <input type="text" class="search-input" placeholder="Search Users..." oninput="searchTable('user-table')">
+            <div class="table-container">
+                <table class="admin-table" id="user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in accounts)
+                        {
+                            <tr>
+                                <td>@a.AccountId</td>
+                                <td>@a.Username</td>
+                                <td>@a.Email</td>
+                                <td>@(string.Join(", ", a.AccountRoles.Where(ar => ar.IsActive && ar.Role.IsActive).Select(ar => ar.Role.RoleName)))</td>
+                                <td>
+                                    <a asp-controller="Account" asp-action="Index" asp-route-accountId="@a.AccountId" class="btn-edit">Edit</a>
+                                    <form asp-controller="Account" asp-action="Delete" method="post" style="display:inline;">
+                                        <input type="hidden" name="id" value="@a.AccountId" />
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Delete this user?')">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <a asp-controller="Account" asp-action="Create" class="btn-add">Add New User</a>
+        </section>
+
+        <!-- Vehicle Management Tab -->
+        <section id="vehicle-tab" class="admin-tab">
+            <h3>Vehicle Management</h3>
+            <input type="text" class="search-input" placeholder="Search Vehicles..." oninput="searchTable('vehicle-table')">
+            <div class="table-container">
+                <form asp-controller="Vehicle" asp-action="Compare" method="get">
+                    <table class="admin-table" id="vehicle-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>ID</th>
+                                <th>Model</th>
+                                <th>Type</th>
+                                <th>Color</th>
+                                <th>Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in vehicles)
+                            {
+                                <tr>
+                                    <td><input type="checkbox" name="vehicleIds" value="@v.VehicleId" class="form-check-input" /></td>
+                                    <td>@v.VehicleId</td>
+                                    <td>@v.Model</td>
+                                    <td>@v.Type</td>
+                                    <td>@v.Color</td>
+                                    <td>$@v.Price.ToString("C")</td>
+                                    <td>
+                                        <button class="btn-edit" onclick="openEditModal('vehicle', '@v.VehicleId', '@v.Model', '@v.Type', '@v.Color', '@v.Price')">Edit</button>
+                                        <form asp-controller="Vehicle" asp-action="Delete" method="post" style="display:inline;">
+                                            <input type="hidden" name="id" value="@v.VehicleId" />
+                                            <button type="submit" class="btn-delete" onclick="return confirm('Delete this vehicle?')">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="table-actions">
+                        <button type="submit" class="btn-compare">Compare Selected</button>
+                    </div>
+                </form>
+            </div>
+            <a asp-controller="Vehicle" asp-action="Create" class="btn-add">Add New Vehicle</a>
+        </section>
+
+        <!-- Order Management Tab -->
+        <section id="order-tab" class="admin-tab">
+            <h3>Order Management</h3>
+            <input type="text" class="search-input" placeholder="Search Orders..." oninput="searchTable('order-table')">
+            <div class="table-container">
+                <table class="admin-table" id="order-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Account ID</th>
+                            <th>Total Price</th>
+                            <th>Order Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in orders)
+                        {
+                            <tr>
+                                <td>@o.OrderId</td>
+                                <td>@o.CustomerId</td>
+                                <td>$@o.TotalPrice.ToString("C")</td>
+                                <td>@o.OrderDate.ToString("yyyy-MM-dd")</td>
+                                <td>@(o.Status ?? "Pending")</td>
+                                <td>
+                                    <button class="btn-edit" onclick="openEditModal('order', '@o.OrderId', '@o.CustomerId', '@o.TotalPrice', '@o.OrderDate', '@o.Status')">Edit</button>
+                                    <form asp-controller="Order" asp-action="Delete" method="post" style="display:inline;">
+                                        <input type="hidden" name="id" value="@o.OrderId" />
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Delete this order?')">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <a asp-controller="Order" asp-action="Create" class="btn-add">Add New Order</a>
+        </section>
+    </main>
+</div>
+
+<!-- Modal Popup (chỉ cho Vehicle và Order) -->
+<div id="editModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3 id="modalTitle">Edit Item</h3>
+        <form id="editForm" method="post">
+            <input type="hidden" id="editType" name="type" />
+            <input type="hidden" id="editId" name="id" />
+            <div class="form-group">
+                <label id="labelField1">Field 1</label>
+                <input type="text" id="editField1" name="field1" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label id="labelField2">Field 2</label>
+                <input type="text" id="editField2" name="field2" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label id="labelField3">Field 3</label>
+                <input type="text" id="editField3" name="field3" class="form-control" />
+            </div>
+            <div class="form-group" id="field4Group">
+                <label id="labelField4">Field 4</label>
+                <input type="text" id="editField4" name="field4" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Is Active</label>
+                <input type="checkbox" id="editIsActive" name="IsActive" value="true" />
+            </div>
+            <button type="submit" class="btn-save">Save</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function showTab(tabId) {
+        var tabs = document.querySelectorAll('.admin-tab');
+        tabs.forEach(function(tab) { tab.classList.remove('active'); });
+        var navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(function(link) { link.classList.remove('active'); });
+
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function searchTable(tableId) {
+        var input = document.querySelector('.search-input');
+        var filter = input.value.toUpperCase();
+        var table = document.getElementById(tableId);
+        var tr = table.getElementsByTagName("tr");
+        for (var i = 1; i < tr.length; i++) {
+            var found = false;
+            var td = tr[i].getElementsByTagName("td");
+            for (var j = 0; j < td.length; j++) {
+                if (td[j] && td[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+                    found = true;
+                }
+            }
+            tr[i].style.display = found ? "" : "none";
+        }
+    }
+
+    function openEditModal(type, id, field1, field2, field3, field4) {
+        var modal = document.getElementById('editModal');
+        var form = document.getElementById('editForm');
+        if (!modal || !form) {
+            console.error('Modal or form not found');
+            alert('Error: Modal not loaded. Please refresh.');
+            return;
+        }
+
+        document.getElementById('editType').value = type;
+        document.getElementById('editId').value = id || '';
+        document.getElementById('editField1').value = field1 || '';
+        document.getElementById('editField2').value = field2 || '';
+        document.getElementById('editField3').value = field3 || '';
+        document.getElementById('editField4').value = field4 || '';
+        document.getElementById('editIsActive').checked = true;
+
+        var url = '';
+        var field4Group = document.getElementById('field4Group');
+        if (type === 'vehicle') {
+            document.getElementById('modalTitle').innerText = "Edit Vehicle";
+            document.getElementById('labelField1').innerText = "Model";
+            document.getElementById('labelField2').innerText = "Type";
+            document.getElementById('labelField3').innerText = "Color";
+            document.getElementById('labelField4').innerText = "Price";
+            field4Group.style.display = 'block';
+            url = '/Vehicle/Edit';
+        } else if (type === 'order') {
+            document.getElementById('modalTitle').innerText = "Edit Order";
+            document.getElementById('labelField1').innerText = "Account ID";
+            document.getElementById('labelField2').innerText = "Total Price";
+            document.getElementById('labelField3').innerText = "Order Date";
+            document.getElementById('labelField4').innerText = "Status";
+            field4Group.style.display = 'block';
+            url = '/Order/Edit';
+        }
+
+        form.setAttribute('action', url);
+        modal.style.display = 'block';
+    }
+
+    function closeModal() {
+        var modal = document.getElementById('editModal');
+        if (modal) modal.style.display = 'none';
+        var form = document.getElementById('editForm');
+        if (form) form.reset();
+    }
+
+    $('#editForm').submit(function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        console.log('Sending data: ' + formData);
+        $.post($(this).attr('action'), formData, function(response) {
+            console.log('Response: ', response);
+            if (response.success) {
+                alert(response.message || 'Operation successful!');
+                location.reload();
+            } else {
+                alert('Operation failed: ' + (response.message || 'Unknown error'));
+            }
+        }).fail(function(xhr) {
+            console.log('Error: ' + xhr.responseText);
+            alert('Error: ' + xhr.responseText);
+        });
+        closeModal();
+    });
+
+    $(window).click(function(event) {
+        if (event.target.id === 'editModal') {
+            closeModal();
+        }
+    });
+
+    document.querySelector('.btn-compare').addEventListener('click', function(e) {
+        var checkedBoxes = document.querySelectorAll('input[name="vehicleIds"]:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one vehicle to compare.');
+        }
+    });
+</script>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
+        --secondary-gradient: linear-gradient(135deg, #28a745, #20c997);
+        --admin-bg: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+        --shadow-light: 0 2px 6px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .site-header {
+        background: var(--primary-gradient);
+        padding: 10px 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: var(--shadow-light);
+    }
+
+    .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Phân bố đều logo, navigation, auth */
+        padding: 0 20px;
+        width: 100%;
+    }
+
+    .logo-section {
+        padding: 0 5px;
+    }
+
+        .logo-section .logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+            .logo-section .logo:hover {
+                color: #ffd700;
+            }
+
+    .main-navigation {
+        flex-grow: 1; /* Chiếm phần lớn không gian để căn giữa */
+        display: flex;
+        justify-content: center; /* Căn giữa các liên kết */
+    }
+
+        .main-navigation ul {
+            list-style: none;
+            display: flex;
+            gap: 20px; /* Khoảng cách giữa Home và Manage */
+            margin: 0;
+            padding: 0;
+            align-items: center;
+        }
+
+        .main-navigation a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+            white-space: nowrap;
+        }
+
+            .main-navigation a:hover {
+                color: #ffd700;
+            }
+
+    .auth-section {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .welcome {
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        margin-right: 10px;
+    }
+
+    .btn-logout {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .btn-logout:hover {
+            background: linear-gradient(135deg, #bd2130, #a71d2a);
+            transform: translateY(-1px);
+        }
+
+    body {
+        padding-top: 60px;
+        background: var(--admin-bg);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .admin-container {
+        display: flex;
+        margin: 15px 0 15px 0;
+        height: calc(100vh - 75px);
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+        width: 100%;
+    }
+
+    .admin-sidebar {
+        width: 180px;
+        background: var(--primary-gradient);
+        padding: 15px 0;
+        margin: 0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .nav-link {
+        display: block;
+        padding: 10px 10px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.3s ease;
+        border-left: 3px solid transparent;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-left-color: white;
+        }
+
+    .admin-main {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .admin-tab {
+        display: none;
+    }
+
+        .admin-tab.active {
+            display: block;
+        }
+
+        .admin-tab h3 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+    .search-input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        box-shadow: var(--shadow-light);
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .admin-table th {
+            background: var(--primary-gradient);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-table tr:hover {
+            background: #f8f9fa;
+        }
+
+    .btn-edit,
+    .btn-delete,
+    .btn-add {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-right: 5px;
+        cursor: pointer;
+    }
+
+    .btn-edit {
+        background: var(--secondary-gradient);
+        color: white;
+    }
+
+        .btn-edit:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-1px);
+        }
+
+    .btn-delete {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #bd2130, #a71d2a);
+            transform: translateY(-1px);
+        }
+
+    .btn-add {
+        display: inline-block;
+        background: var(--primary-gradient);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-top: 15px;
+    }
+
+        .btn-add:hover {
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+            transform: translateY(-1px);
+        }
+
+    .table-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .btn-compare {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .btn-compare:hover {
+            background: linear-gradient(135deg, #117a8b, #0f6677);
+            transform: translateY(-1px);
+        }
+
+    .form-check-input {
+        margin: 0;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+        .pagination a {
+            padding: 6px 12px;
+            text-decoration: none;
+            color: #2c3e50;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+            .pagination a:hover {
+                background: var(--primary-gradient);
+                color: white;
+            }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+
+    .modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 400px;
+        box-shadow: var(--shadow-hover);
+    }
+
+    .close {
+        float: right;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .btn-save {
+        background: var(--secondary-gradient);
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .btn-save:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-1px);
+        }
+</style>

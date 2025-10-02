@@ -11,9 +11,10 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
     public interface IOrderRepository : IGenericRepository<Order>
     {
 
+        Task<Order> GetOrderByIdAsync(int id);
         Task<Order> CreateOrderAsync(Order order);
-
         Task<IEnumerable<Order>> GetAllOrdersAsync();
+        Task UpdateOrderAsync(Order order);
 
         //lấy order theo account id
 

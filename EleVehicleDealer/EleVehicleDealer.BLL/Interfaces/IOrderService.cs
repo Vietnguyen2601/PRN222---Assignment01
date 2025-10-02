@@ -10,8 +10,12 @@ namespace EleVehicleDealer.BLL.Interfaces
     public interface IOrderService
     {
 
+        Task<Order> GetOrderByIdAsync(int orderId);
+
         Task<IEnumerable<Order>> GetAllOrdersAsync();
 
         Task<Order> CreateOrderAsync(Order order);
+
+        Task UpdateOrderAsync(Order order);
     }
 }

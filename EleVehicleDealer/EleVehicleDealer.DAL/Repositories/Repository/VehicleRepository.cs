@@ -139,5 +139,19 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<decimal>> GetVehiclePriceByModelAsync(string model)
+        {
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                throw new ArgumentException("Model cannot be null or empty.", nameof(model));
+            }
+
+            return await _context.Vehicles
+                .Where(v => v.Model == model && v.IsActive)
+                .AsNoTracking()
+                .Select(v => v.Price)
+                .ToListAsync();
+        }
     }
 }

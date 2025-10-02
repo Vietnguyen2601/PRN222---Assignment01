@@ -1,0 +1,425 @@
+﻿```cshtml
+@model IEnumerable<EleVehicleDealer.DAL.EntityModels.Schedule>
+@using EleVehicleDealer.DAL.EntityModels
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="main-container">
+    <h2 class="page-title">Schedule Management</h2>
+
+    <!-- Hiển thị thông báo -->
+    @if (TempData["Message"] != null)
+    {
+        <div class="custom-alert success mb-20" role="alert">
+            @TempData["Message"]
+            <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="custom-alert error mb-20" role="alert">
+            @TempData["Error"]
+            <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+    }
+
+    <!-- Nút mở modal -->
+    <button type="button" id="openCreateModal" class="submit-btn mb-20">Create New Schedule</button>
+
+    <!-- Modal form tạo lịch trình -->
+    <div class="modal fade" id="createScheduleModal" tabindex="-1" role="dialog" aria-labelledby="createScheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createScheduleModalLabel">Create Schedule</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h4>Create Schedule</h4>
+                        </div>
+                        <div class="form-body">
+                            <form id="createScheduleForm" asp-controller="Schedule" asp-action="Create" method="post" class="schedule-form">
+                                @Html.AntiForgeryToken()
+                                @Html.ValidationSummary(false, "", new { @class = "error-message" })
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="CustomerId">Customer ID</label>
+                                        <input id="CustomerId" name="CustomerId" type="number" class="input-field" min="1" required />
+                                        <span class="error-message" data-valmsg-for="CustomerId" data-valmsg-replace="true"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="StationCarId">Station Car ID</label>
+                                        <input id="StationCarId" name="StationCarId" type="number" class="input-field" min="1" required />
+                                        <span class="error-message" data-valmsg-for="StationCarId" data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="Status">Status</label>
+                                        <div class="radio-container">
+                                            <div>
+                                                <input type="radio" id="Status_Pending" name="Status" value="Pending" checked />
+                                                <label class="radio-label" for="Status_Pending">Pending</label>
+                                            </div>
+                                            <div>
+                                                <input type="radio" id="Status_Confirmed" name="Status" value="Confirmed" />
+                                                <label class="radio-label" for="Status_Confirmed">Confirmed</label>
+                                            </div>
+                                            <div>
+                                                <input type="radio" id="Status_Cancelled" name="Status" value="Cancelled" />
+                                                <label class="radio-label" for="Status_Cancelled">Cancelled</label>
+                                            </div>
+                                        </div>
+                                        <span class="error-message" data-valmsg-for="Status" data-valmsg-replace="true"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ScheduleTime">Schedule Time</label>
+                                        <input id="ScheduleTime" name="ScheduleTime" class="input-field" type="datetime-local" required value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                                        <span class="error-message" data-valmsg-for="ScheduleTime" data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="IsActive">Is Active</label>
+                                        <div class="checkbox-container">
+                                            <input type="hidden" name="IsActive" value="false" />
+                                            <input id="IsActive" name="IsActive" type="checkbox" class="input-field" value="true" checked />
+                                            <label class="checkbox-label" for="IsActive">Yes</label>
+                                        </div>
+                                        <span class="error-message" data-valmsg-for="IsActive" data-valmsg-replace="true"></span>
+                                    </div>
+                                    <div class="form-group submit-group">
+                                        <button type="submit" class="submit-btn">Create</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách lịch trình -->
+    <div class="schedule-grid">
+        <h4>All Schedules</h4>
+        @if (Model != null && Model.Any())
+        {
+            foreach (var schedule in Model)
+            {
+                <div class="schedule-card">
+                    <div class="schedule-card-content">
+                        <h5>Schedule #@schedule.ScheduleId</h5>
+                        <p><strong>Customer ID:</strong> @schedule.CustomerId</p>
+                        <p><strong>Station Car ID:</strong> @schedule.StationCarId</p>
+                        <p><strong>Status:</strong> @schedule.Status</p>
+                        <p><strong>Schedule Time:</strong> @schedule.ScheduleTime.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p><strong>Created At:</strong> @schedule.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p><strong>Updated At:</strong> @(schedule.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</p>
+                        <p><strong>Is Active:</strong> @(schedule.IsActive ? "Yes" : "No")</p>
+                        <form asp-action="UpdateStatus" method="post" style="margin-top: 10px;">
+                            <input type="hidden" name="id" value="@schedule.ScheduleId" />
+                            <button type="submit" name="status" value="Complete" class="status-btn complete">Complete</button>
+                            <button type="submit" name="status" value="Cancel" class="status-btn cancel">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p>No schedules found.</p>
+        }
+    </div>
+</div>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 70px 0 20px;
+        background: #f4f7fa;
+    }
+
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        text-align: center;
+        color: #2c3e50;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 30px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .custom-alert {
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+        .custom-alert.success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .custom-alert.error {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+    .close-btn {
+        border: none;
+        background: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .form-header {
+        background: #2c3e50;
+        color: white;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .form-body {
+        padding: 20px;
+    }
+
+    .schedule-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 20px;
+        width: 100%;
+    }
+
+    .form-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .submit-group {
+        flex: 1;
+        align-items: flex-end;
+    }
+
+    .input-field {
+        padding: 12px 16px;
+        border: 2px solid #e1e8ed;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+        .input-field:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+    .submit-btn {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+
+    .status-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: all 0.3s ease;
+    }
+
+        .status-btn.complete {
+            background-color: #28a745;
+            color: white;
+        }
+
+            .status-btn.complete:hover {
+                background-color: #218838;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+            }
+
+        .status-btn.cancel {
+            background-color: #dc3545;
+            color: white;
+        }
+
+            .status-btn.cancel:hover {
+                background-color: #c82333;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+            }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 12px;
+    }
+
+    .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .checkbox-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .input-field[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: #667eea;
+        border: 2px solid #e1e8ed;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+        .input-field[type="checkbox"]:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+        }
+
+    .radio-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 5px;
+    }
+
+        .radio-container div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+    .radio-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .input-field[type="radio"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #667eea;
+        border: 2px solid #e1e8ed;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+        .input-field[type="radio"]:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+        }
+
+    .schedule-grid {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        margin-top: 30px;
+        padding: 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .schedule-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 2px solid transparent;
+        min-width: 300px;
+        flex: 0 0 auto;
+    }
+
+        .schedule-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+    .schedule-card-content h5 {
+        margin: 0 0 15px 0;
+        font-size: 1.2rem;
+        color: #2c3e50;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .schedule-card-content p {
+        margin: 8px 0;
+        color: #6c757d;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .schedule-card-content p strong {
+            color: #495057;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+</style>

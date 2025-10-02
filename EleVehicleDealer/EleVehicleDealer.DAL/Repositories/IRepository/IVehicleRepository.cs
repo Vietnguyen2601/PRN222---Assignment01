@@ -17,5 +17,6 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
         Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId);
         Task<int> GetTotalStockAsync();
         Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId);
+        Task<IEnumerable<decimal>> GetVehiclePriceByModelAsync(string model);
     }
 }

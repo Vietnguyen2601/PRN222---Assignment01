@@ -1,0 +1,499 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<EleVehicleDealer.DAL.EntityModels.Order>
+@{
+    var editOrder = ViewBag.EditOrder as EleVehicleDealer.Presentation.Modal.CreateOrderViewModel;
+    var message = TempData["Message"] as string;
+    var error = TempData["Error"] as string;
+    int? editId = ViewBag.EditId;
+}
+
+<!-- Debug information -->
+@if (editId.HasValue)
+{
+    <div class="custom-alert info mb-20" role="alert">
+        Debug: editId received = @editId
+        <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+    </div>
+}
+@if (Model == null || !Model.Any())
+{
+    <div class="custom-alert error mb-20" role="alert">
+        Debug: No orders found in Model
+        <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+    </div>
+}
+
+<!-- Hiển thị thông báo -->
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="custom-alert success mb-20" role="alert">
+        @message
+        <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="custom-alert error mb-20" role="alert">
+        @error
+        <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+    </div>
+}
+
+<div class="main-container">
+    <h2 class="page-title">Order Management</h2>
+
+    <!-- Form tạo đơn hàng -->
+    <div class="form-container">
+        <div class="form-header">
+            <h4>Create Order</h4>
+        </div>
+        <div class="form-body">
+            <form asp-controller="Order" asp-action="Create" method="post" class="order-form">
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary(false, "", new { @class = "error-message" })
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="CustomerId">Customer ID</label>
+                        <input id="CustomerId" name="CustomerId" value="@editOrder?.CustomerId" class="input-field" type="number" required min="1" />
+                        <span class="error-message" asp-validation-for="@editOrder.CustomerId"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="StationName">Station Name</label>
+                        <input id="StationName" name="StationName" value="@editOrder?.StationName" class="input-field" type="text" required />
+                        <span class="error-message" asp-validation-for="@editOrder.StationName"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="Model">Model</label>
+                        <input id="Model" name="Model" value="@editOrder?.Model" class="input-field" type="text" required />
+                        <span class="error-message" asp-validation-for="@editOrder.Model"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="StaffId">Staff ID</label>
+                        <input id="StaffId" name="StaffId" value="@editOrder?.StaffId" class="input-field" type="number" required min="1" />
+                        <span class="error-message" asp-validation-for="@editOrder.StaffId"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="PromotionId">Promotion ID (Optional)</label>
+                        <input id="PromotionId" name="PromotionId" value="@editOrder?.PromotionId" class="input-field" type="number" />
+                        <span class="error-message" asp-validation-for="@editOrder.PromotionId"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group submit-group">
+                        <button type="submit" class="submit-btn">Create</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách đơn hàng -->
+    <div class="order-grid" id="orderGrid" data-columns="3">
+        @foreach (var o in Model ?? Enumerable.Empty<EleVehicleDealer.DAL.EntityModels.Order>())
+        {
+            <div class="order-card">
+                <div class="order-card-content">
+                    <h4>Order #@o.OrderId</h4>
+                    <!-- Debug OrderId comparison -->
+                    <p class="debug-info">Debug: OrderId = @o.OrderId, editId = @editId, Match = @(editId == o.OrderId)</p>
+                    @if (editId == o.OrderId)
+                    {
+                        <!-- Edit Form -->
+                        <form asp-controller="Order" asp-action="Update" method="post" class="order-form" id="edit-form-@o.OrderId">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="OrderId" value="@o.OrderId" />
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="CustomerId_@o.OrderId">Customer ID</label>
+                                    <input id="CustomerId_@o.OrderId" name="CustomerId" value="@o.CustomerId" class="input-field" type="number" required min="1" />
+                                    <span class="error-message" asp-validation-for="@o.CustomerId"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="StationCarId_@o.OrderId">Inventory ID</label>
+                                    <input id="StationCarId_@o.OrderId" name="StationCarId" value="@o.StationCarId" class="input-field" type="text" required />
+                                    <span class="error-message" asp-validation-for="@o.StationCarId"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="OrderDate_@o.OrderId">Order Date</label>
+                                    <input id="OrderDate_@o.OrderId" name="OrderDate" value="@o.OrderDate.ToString("yyyy-MM-ddTHH:mm")" class="input-field" type="datetime-local" required />
+                                    <span class="error-message" asp-validation-for="@o.OrderDate"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="TotalPrice_@o.OrderId">Total Price</label>
+                                    <input id="TotalPrice_@o.OrderId" name="TotalPrice" value="@o.TotalPrice" class="input-field" type="number" step="0.01" required />
+                                    <span class="error-message" asp-validation-for="@o.TotalPrice"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <div class="status-radio-group">
+                                        <label class="radio-label">
+                                            <input type="radio" name="Status" value="Pending" @(o.Status == "Pending" ? "checked" : "") required />
+                                            <span class="radio-text">Pending</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="Status" value="Processing" @(o.Status == "Processing" ? "checked" : "") required />
+                                            <span class="radio-text">Processing</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="Status" value="Completed" @(o.Status == "Completed" ? "checked" : "") required />
+                                            <span class="radio-text">Completed</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="Status" value="Cancelled" @(o.Status == "Cancelled" ? "checked" : "") required />
+                                            <span class="radio-text">Cancelled</span>
+                                        </label>
+                                    </div>
+                                    <span class="error-message" data-valmsg-for="Status"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <span class="error-message" asp-validation-summary="ModelOnly"></span>
+                                </div>
+                            </div>
+                            <div class="card-actions">
+                                <button type="submit" class="submit-btn">Save</button>
+                                <a asp-controller="Order" asp-action="OrderManager" class="edit-btn">Cancel</a>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <!-- Display Order Details -->
+                        <p><strong>Customer ID:</strong> <span>@o.CustomerId</span></p>
+                        <p><strong>Inventory ID:</strong> <span>@o.StationCarId</span></p>
+                        <p><strong>Order Date:</strong> <span>@o.OrderDate.ToString("dd/MM/yyyy HH:mm")</span></p>
+                        <p class="price"><strong>Total Price:</strong> <span>@o.TotalPrice.ToString("C")</span></p>
+                        <p><strong>Status:</strong> <span>@o.Status</span></p>
+                        <p><strong>Is Active:</strong> <span>@(o.IsActive ? "Yes" : "No")</span></p>
+                        <div class="card-actions">
+                            <form asp-controller="Order" asp-action="SoftDelete" method="post" class="delete-form" id="delete-form-@o.OrderId">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@o.OrderId" />
+                                <button type="submit" class="delete-btn" onclick="return confirm('Soft delete this order?')">Delete</button>
+                            </form>
+                            <a asp-controller="Order" asp-action="OrderManager" asp-route-editId="@o.OrderId" class="edit-btn">Edit</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Load jQuery and validation scripts -->
+<script src="/lib/jquery/dist/jquery.min.js"></script>
+<script src="/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+<!-- Fallback to CDN if local jQuery fails -->
+<script>
+    window.jQuery || document.write('<script src="https://code.jquery.com/jquery-3.6.0.min.js"><\/script>');
+</script>
+<script src="/js/order-manager.js"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 70px 0 20px;
+        background: #f4f7fa;
+    }
+
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        text-align: center;
+        color: #2c3e50;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 30px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .custom-alert {
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+        .custom-alert.success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .custom-alert.error {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .custom-alert.info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+    .close-btn {
+        border: none;
+        background: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .form-header {
+        background: #2c3e50;
+        color: white;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .form-body {
+        padding: 20px;
+    }
+
+    .order-form, .delete-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 20px;
+        width: 100%;
+    }
+
+    .form-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .submit-group {
+        flex: 1;
+        align-items: flex-end;
+    }
+
+    .input-field {
+        padding: 12px 16px;
+        border: 2px solid #e1e8ed;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+        .input-field:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+    .submit-btn {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        pointer-events: auto;
+    }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 12px;
+    }
+
+    .status-radio-group {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 5px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e1e8ed;
+    }
+
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        color: #495057;
+        transition: color 0.3s ease;
+    }
+
+        .radio-label:hover {
+            color: #667eea;
+        }
+
+        .radio-label input[type="radio"] {
+            margin: 0;
+            accent-color: #667eea;
+        }
+
+    .radio-text {
+        font-size: 14px;
+    }
+
+    .order-grid {
+        display: grid;
+        gap: 25px;
+        margin-top: 30px;
+        padding: 10px;
+        grid-template-columns: repeat(3, 1fr);
+        transition: all 0.3s ease;
+    }
+
+    .order-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 2px solid transparent;
+        position: relative;
+        z-index: 1;
+    }
+
+    .order-card-content {
+        position: relative;
+        z-index: 2;
+    }
+
+        .order-card-content h4 {
+            margin: 0 0 15px 0;
+            font-size: 1.4rem;
+            color: #2c3e50;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .order-card-content p {
+            margin: 8px 0;
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+
+            .order-card-content p.price {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #28a745;
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 2px solid #f8f9fa;
+            }
+
+            .order-card-content p strong {
+                color: #495057;
+                font-weight: 600;
+                text-transform: uppercase;
+                font-size: 12px;
+                letter-spacing: 0.5px;
+            }
+
+    .debug-info {
+        color: #17a2b8;
+        font-size: 12px;
+        font-style: italic;
+    }
+
+    .card-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        position: relative;
+        z-index: 3;
+        pointer-events: auto;
+    }
+
+    .delete-btn {
+        padding: 8px 20px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 3;
+        pointer-events: auto;
+    }
+
+        .delete-btn:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+    .edit-btn {
+        padding: 8px 20px;
+        background: #17a2b8;
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        z-index: 3;
+        pointer-events: auto;
+    }
+
+        .edit-btn:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+</style>

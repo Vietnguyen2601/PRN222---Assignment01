@@ -42,5 +42,25 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public Task<Order> GetOrderByIdAsync(int id)
+        {
+            return _context.Orders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.OrderId == id && o.IsActive == true);
+        }
+
+        public async Task UpdateOrderAsync(Order order)
+        {
+            try
+            {
+                _context.Orders.Update(order);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new Exception("Error updating order status in database", ex);
+            }
+        }
     }
 }

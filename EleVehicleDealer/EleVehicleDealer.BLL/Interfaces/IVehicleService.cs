@@ -18,6 +18,7 @@ namespace EleVehicleDealer.BLL.Interfaces
         Task<IEnumerable<Vehicle>> GetVehiclesByTypeAsync(string type);
         Task<IEnumerable<Vehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice);
         Task<IEnumerable<Vehicle>> SearchVehiclesAsync(string searchTerm);
+        Task<IEnumerable<decimal>> GetVehiclePriceByModelAsync(string model);
 
     }
 }

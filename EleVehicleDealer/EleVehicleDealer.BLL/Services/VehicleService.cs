@@ -121,5 +121,10 @@ namespace EleVehicleDealer.BLL.Services
         {
             return await _vehicleRepository.GetVehiclesByStationAsync(stationId);
         }
+
+        public async Task<IEnumerable<decimal>> GetVehiclePriceByModelAsync(string model)
+        {
+            return await _vehicleRepository.GetVehiclePriceByModelAsync(model);
+        }
     }
 }

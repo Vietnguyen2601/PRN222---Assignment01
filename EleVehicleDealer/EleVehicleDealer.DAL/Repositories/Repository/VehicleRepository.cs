@@ -59,7 +59,8 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<IEnumerable<Vehicle>> GetAllVehicleAsync()
         {
             return await _context.Vehicles
-                .Where(v => v.IsActive)
+                .Include(v => v.StationCars)
+                .ThenInclude(sc => sc.Station)
                 .AsNoTracking()
                 .ToListAsync();
         }

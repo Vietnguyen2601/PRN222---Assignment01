@@ -60,7 +60,7 @@
                                 <td>@a.Email</td>
                                 <td>@(string.Join(", ", a.AccountRoles.Where(ar => ar.IsActive && ar.Role.IsActive).Select(ar => ar.Role.RoleName)))</td>
                                 <td>
-                                    <a asp-controller="Account" asp-action="Index" asp-route-accountId="@a.AccountId" class="btn-edit">Edit</a>
+                                    <a asp-controller="Account" asp-action="Index" asp-route-id="@a.AccountId" class="btn-edit">Edit</a>
                                     <form asp-controller="Account" asp-action="Delete" method="post" style="display:inline;">
                                         <input type="hidden" name="id" value="@a.AccountId" />
                                         <button type="submit" class="btn-delete" onclick="return confirm('Delete this user?')">Delete</button>
@@ -79,46 +79,45 @@
             <h3>Vehicle Management</h3>
             <input type="text" class="search-input" placeholder="Search Vehicles..." oninput="searchTable('vehicle-table')">
             <div class="table-container">
-                <form asp-controller="Vehicle" asp-action="Compare" method="get">
-                    <table class="admin-table" id="vehicle-table">
-                        <thead>
+                <table class="admin-table" id="vehicle-table">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>ID</th>
+                            <th>Model</th>
+                            <th>Type</th>
+                            <th>Color</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in vehicles.Where(v => v.IsActive))
+                        {
                             <tr>
-                                <th>Select</th>
-                                <th>ID</th>
-                                <th>Model</th>
-                                <th>Type</th>
-                                <th>Color</th>
-                                <th>Price</th>
-                                <th>Actions</th>
+                                <td><input type="checkbox" name="vehicleIds" value="@v.VehicleId" class="form-check-input" form="compareForm" /></td>
+                                <td>@v.VehicleId</td>
+                                <td>@v.Model</td>
+                                <td>@v.Type</td>
+                                <td>@v.Color</td>
+                                <td>$@v.Price.ToString("C")</td>
+                                <td>
+                                    <a asp-controller="Vehicle" asp-action="Index" asp-route-id="@v.VehicleId" class="btn-edit">Edit</a>
+                                    <form asp-controller="Vehicle" asp-action="Delete" method="post" style="display:inline;">
+                                        <input type="hidden" name="id" value="@v.VehicleId" />
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Delete this vehicle?')">Delete</button>
+                                    </form>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var v in vehicles)
-                            {
-                                <tr>
-                                    <td><input type="checkbox" name="vehicleIds" value="@v.VehicleId" class="form-check-input" /></td>
-                                    <td>@v.VehicleId</td>
-                                    <td>@v.Model</td>
-                                    <td>@v.Type</td>
-                                    <td>@v.Color</td>
-                                    <td>$@v.Price.ToString("C")</td>
-                                    <td>
-                                        <button class="btn-edit" onclick="openEditModal('vehicle', '@v.VehicleId', '@v.Model', '@v.Type', '@v.Color', '@v.Price')">Edit</button>
-                                        <form asp-controller="Vehicle" asp-action="Delete" method="post" style="display:inline;">
-                                            <input type="hidden" name="id" value="@v.VehicleId" />
-                                            <button type="submit" class="btn-delete" onclick="return confirm('Delete this vehicle?')">Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                        }
+                    </tbody>
+                </table>
+                <form id="compareForm" asp-controller="Vehicle" asp-action="Compare" method="get">
                     <div class="table-actions">
                         <button type="submit" class="btn-compare">Compare Selected</button>
                     </div>
                 </form>
             </div>
-            <a asp-controller="Vehicle" asp-action="Create" class="btn-add">Add New Vehicle</a>
         </section>
 
         <!-- Order Management Tab -->
@@ -147,7 +146,7 @@
                                 <td>@o.OrderDate.ToString("yyyy-MM-dd")</td>
                                 <td>@(o.Status ?? "Pending")</td>
                                 <td>
-                                    <button class="btn-edit" onclick="openEditModal('order', '@o.OrderId', '@o.CustomerId', '@o.TotalPrice', '@o.OrderDate', '@o.Status')">Edit</button>
+                                    <a asp-controller="Order" asp-action="OrderManager" asp-route-id="@o.OrderId" class="btn-edit">Edit</a>
                                     <form asp-controller="Order" asp-action="Delete" method="post" style="display:inline;">
                                         <input type="hidden" name="id" value="@o.OrderId" />
                                         <button type="submit" class="btn-delete" onclick="return confirm('Delete this order?')">Delete</button>
@@ -161,39 +160,6 @@
             <a asp-controller="Order" asp-action="Create" class="btn-add">Add New Order</a>
         </section>
     </main>
-</div>
-
-<!-- Modal Popup (chỉ cho Vehicle và Order) -->
-<div id="editModal" class="modal" style="display:none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle">Edit Item</h3>
-        <form id="editForm" method="post">
-            <input type="hidden" id="editType" name="type" />
-            <input type="hidden" id="editId" name="id" />
-            <div class="form-group">
-                <label id="labelField1">Field 1</label>
-                <input type="text" id="editField1" name="field1" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label id="labelField2">Field 2</label>
-                <input type="text" id="editField2" name="field2" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label id="labelField3">Field 3</label>
-                <input type="text" id="editField3" name="field3" class="form-control" />
-            </div>
-            <div class="form-group" id="field4Group">
-                <label id="labelField4">Field 4</label>
-                <input type="text" id="editField4" name="field4" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label>Is Active</label>
-                <input type="checkbox" id="editIsActive" name="IsActive" value="true" />
-            </div>
-            <button type="submit" class="btn-save">Save</button>
-        </form>
-    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -224,79 +190,6 @@
             tr[i].style.display = found ? "" : "none";
         }
     }
-
-    function openEditModal(type, id, field1, field2, field3, field4) {
-        var modal = document.getElementById('editModal');
-        var form = document.getElementById('editForm');
-        if (!modal || !form) {
-            console.error('Modal or form not found');
-            alert('Error: Modal not loaded. Please refresh.');
-            return;
-        }
-
-        document.getElementById('editType').value = type;
-        document.getElementById('editId').value = id || '';
-        document.getElementById('editField1').value = field1 || '';
-        document.getElementById('editField2').value = field2 || '';
-        document.getElementById('editField3').value = field3 || '';
-        document.getElementById('editField4').value = field4 || '';
-        document.getElementById('editIsActive').checked = true;
-
-        var url = '';
-        var field4Group = document.getElementById('field4Group');
-        if (type === 'vehicle') {
-            document.getElementById('modalTitle').innerText = "Edit Vehicle";
-            document.getElementById('labelField1').innerText = "Model";
-            document.getElementById('labelField2').innerText = "Type";
-            document.getElementById('labelField3').innerText = "Color";
-            document.getElementById('labelField4').innerText = "Price";
-            field4Group.style.display = 'block';
-            url = '/Vehicle/Edit';
-        } else if (type === 'order') {
-            document.getElementById('modalTitle').innerText = "Edit Order";
-            document.getElementById('labelField1').innerText = "Account ID";
-            document.getElementById('labelField2').innerText = "Total Price";
-            document.getElementById('labelField3').innerText = "Order Date";
-            document.getElementById('labelField4').innerText = "Status";
-            field4Group.style.display = 'block';
-            url = '/Order/Edit';
-        }
-
-        form.setAttribute('action', url);
-        modal.style.display = 'block';
-    }
-
-    function closeModal() {
-        var modal = document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-        var form = document.getElementById('editForm');
-        if (form) form.reset();
-    }
-
-    $('#editForm').submit(function(e) {
-        e.preventDefault();
-        var formData = $(this).serialize();
-        console.log('Sending data: ' + formData);
-        $.post($(this).attr('action'), formData, function(response) {
-            console.log('Response: ', response);
-            if (response.success) {
-                alert(response.message || 'Operation successful!');
-                location.reload();
-            } else {
-                alert('Operation failed: ' + (response.message || 'Unknown error'));
-            }
-        }).fail(function(xhr) {
-            console.log('Error: ' + xhr.responseText);
-            alert('Error: ' + xhr.responseText);
-        });
-        closeModal();
-    });
-
-    $(window).click(function(event) {
-        if (event.target.id === 'editModal') {
-            closeModal();
-        }
-    });
 
     document.querySelector('.btn-compare').addEventListener('click', function(e) {
         var checkedBoxes = document.querySelectorAll('input[name="vehicleIds"]:checked');
@@ -332,7 +225,7 @@
         margin: 0 auto;
         display: flex;
         align-items: center;
-        justify-content: space-between; /* Phân bố đều logo, navigation, auth */
+        justify-content: space-between;
         padding: 0 20px;
         width: 100%;
     }
@@ -356,15 +249,15 @@
             }
 
     .main-navigation {
-        flex-grow: 1; /* Chiếm phần lớn không gian để căn giữa */
+        flex-grow: 1;
         display: flex;
-        justify-content: center; /* Căn giữa các liên kết */
+        justify-content: center;
     }
 
         .main-navigation ul {
             list-style: none;
             display: flex;
-            gap: 20px; /* Khoảng cách giữa Home và Manage */
+            gap: 20px;
             margin: 0;
             padding: 0;
             align-items: center;
@@ -627,61 +520,4 @@
                 background: var(--primary-gradient);
                 color: white;
             }
-
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-    }
-
-    .modal-content {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        width: 400px;
-        box-shadow: var(--shadow-hover);
-    }
-
-    .close {
-        float: right;
-        font-size: 24px;
-        cursor: pointer;
-    }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-    }
-
-    .btn-save {
-        background: var(--secondary-gradient);
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-        .btn-save:hover {
-            background: linear-gradient(135deg, #218838, #1ea085);
-            transform: translateY(-1px);
-        }
 </style>

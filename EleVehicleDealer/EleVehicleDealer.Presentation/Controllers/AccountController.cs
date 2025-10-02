@@ -116,7 +116,7 @@ namespace EleVehicleDealer.Presentation.Controllers
             return View("AccountManagement", accounts.ToList());
         }
 
-        public IActionResult Create()
+        public IActionResult Create()   
         {
             return View();
         }

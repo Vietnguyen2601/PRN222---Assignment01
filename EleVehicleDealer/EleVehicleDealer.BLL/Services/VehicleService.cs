@@ -41,10 +41,7 @@ namespace EleVehicleDealer.BLL.Services
 
         public async Task<Vehicle> GetByIdAsync(int id)
         {
-            var vehicle = await _context.Vehicles.FindAsync(id);
-            if (vehicle == null || !vehicle.IsActive)
-                return null;
-            return vehicle;
+            return await _context.Vehicles.FindAsync(id); ;
         }
 
         public async Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync()
@@ -87,27 +84,27 @@ namespace EleVehicleDealer.BLL.Services
             if (vehicle == null)
                 throw new ArgumentNullException(nameof(vehicle));
 
-            Console.WriteLine($"Updating Vehicle: Id={vehicle.VehicleId}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}");
+            Console.WriteLine($"Updating Vehicle: Id={vehicle.VehicleId}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}, IsActive={vehicle.IsActive}");
             if (vehicle.VehicleId <= 0)
                 throw new ArgumentException("VehicleId is required and must be a positive integer.", nameof(vehicle.VehicleId));
 
             var existingVehicle = await _context.Vehicles.FindAsync(vehicle.VehicleId);
-            if (existingVehicle == null || !existingVehicle.IsActive)
+            if (existingVehicle == null)
             {
-                Console.WriteLine($"Error: Vehicle with Id={vehicle.VehicleId} not found or not active");
+                Console.WriteLine($"Error: Vehicle with Id={vehicle.VehicleId} not found");
                 return null;
             }
 
-            existingVehicle.Model = vehicle.Model;
-            existingVehicle.Type = vehicle.Type;
-            existingVehicle.Color = vehicle.Color;
-            existingVehicle.Price = vehicle.Price;
+            _context.Entry(existingVehicle).CurrentValues.SetValues(vehicle);
             existingVehicle.UpdatedAt = DateTime.Now;
 
             try
             {
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"Update successful for VehicleId={vehicle.VehicleId}");
+                // Xác nhận từ DB
+                var verifiedVehicle = await _context.Vehicles.AsNoTracking().FirstOrDefaultAsync(v => v.VehicleId == vehicle.VehicleId);
+                Console.WriteLine($"Verified IsActive from DB after save: {verifiedVehicle?.IsActive}");
+                Console.WriteLine($"Update successful for VehicleId={vehicle.VehicleId}, IsActive={existingVehicle.IsActive}");
                 return existingVehicle;
             }
             catch (DbUpdateException ex)

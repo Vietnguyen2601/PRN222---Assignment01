@@ -33,6 +33,37 @@ namespace EleVehicleDealer.Presentation.Controllers
             return View(vehicles);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleActive(int id, bool isActive)
+        {
+            Console.WriteLine($"ToggleActive called with id: {id}, isActive: {isActive}");
+            var vehicle = await _vehicleService.GetByIdAsync(id);
+            if (vehicle == null)
+            {
+                TempData["Error"] = $"Không tìm thấy xe với ID {id}.";
+                Console.WriteLine($"Error: Vehicle with ID {id} not found.");
+                return RedirectToAction(nameof(Index));
+            }
+
+            bool wasActive = vehicle.IsActive;
+            vehicle.IsActive = isActive;
+            var updatedVehicle = await _vehicleService.UpdateAsync(vehicle);
+            if (updatedVehicle == null)
+            {
+                TempData["Error"] = $"Lỗi khi cập nhật trạng thái xe ID {id}.";
+                Console.WriteLine($"Update failed for VehicleId={id}");
+                return RedirectToAction(nameof(Index));
+            }
+
+            string message = wasActive
+                ? "Đã vô hiệu hóa xe thành công."
+                : "Đã kích hoạt xe thành công.";
+            TempData["Message"] = message;
+
+            return RedirectToAction(nameof(Index));
+        }
+
         public async Task<IActionResult> Catalog(string searchTerm, string type, decimal? minPrice, decimal? maxPrice)
         {
             IEnumerable<Vehicle> vehicles;
@@ -106,50 +137,52 @@ namespace EleVehicleDealer.Presentation.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit([Bind("VehicleId,Model,Type,Color,Price")] Vehicle vehicle)
+        public async Task<IActionResult> Update(Vehicle vehicle)
         {
-            if (vehicle == null)
-            {
-                TempData["Error"] = "Dữ liệu xe không hợp lệ. Không nhận được dữ liệu.";
-                Console.WriteLine("Lỗi: Vehicle là null");
-                return RedirectToAction(nameof(Index));
-            }
-
-            Console.WriteLine($"Nhận được Vehicle: Id={vehicle.VehicleId}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}");
-
+            Console.WriteLine($"Received vehicle: Id={vehicle.VehicleId}, IsActive={vehicle.IsActive}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}");
             if (vehicle.VehicleId <= 0)
             {
-                TempData["Error"] = "Dữ liệu xe không hợp lệ. VehicleId là bắt buộc.";
-                Console.WriteLine("Lỗi: VehicleId không hợp lệ hoặc bằng 0");
+                TempData["Error"] = "Invalid VehicleId. Please try again.";
                 return RedirectToAction(nameof(Index));
             }
 
             if (!ModelState.IsValid)
             {
-                Console.WriteLine("ModelState không hợp lệ. Lỗi: " + string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-                TempData["Error"] = "Dữ liệu đầu vào không hợp lệ. Vui lòng kiểm tra biểu mẫu.";
-
-                // Lấy danh sách xe để truyền vào view Index
-                var vehicles = await _context.Vehicles.ToListAsync();
-                ViewBag.EditVehicle = vehicle; // Đặt lại dữ liệu xe để hiển thị form chỉnh sửa
-                return View("Index", vehicles);
+                Console.WriteLine($"ModelState is invalid. Errors: {string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))}");
             }
 
-            var updatedVehicle = await _vehicleService.UpdateAsync(vehicle);
-            if (updatedVehicle != null)
+            if (ModelState.IsValid)
             {
-                TempData["Message"] = "Cập nhật xe thành công!";
-                Console.WriteLine("Cập nhật thành công");
+                var existingVehicle = await _vehicleService.GetByIdAsync(vehicle.VehicleId);
+                Console.WriteLine($"Existing vehicle: Id={existingVehicle?.VehicleId}, IsActive={existingVehicle?.IsActive}");
+                if (existingVehicle == null)
+                {
+                    TempData["Error"] = $"Không tìm thấy xe với ID {vehicle.VehicleId}.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                existingVehicle.Model = vehicle.Model;
+                existingVehicle.Type = vehicle.Type;
+                existingVehicle.Color = vehicle.Color;
+                existingVehicle.Price = vehicle.Price;
+                existingVehicle.IsActive = vehicle.IsActive;
+
+                var updatedVehicle = await _vehicleService.UpdateAsync(existingVehicle);
+                Console.WriteLine($"Update result: {updatedVehicle != null}");
+                if (updatedVehicle == null)
+                {
+                    TempData["Error"] = $"Lỗi khi cập nhật xe ID {vehicle.VehicleId}.";
+                }
+                else
+                {
+                    TempData["Message"] = "Đã cập nhật xe thành công.";
+                }
                 return RedirectToAction(nameof(Index));
             }
 
-            TempData["Error"] = "Không tìm thấy xe hoặc xe không hoạt động.";
-            Console.WriteLine("Lỗi: Không tìm thấy xe hoặc xe không hoạt động");
-
-            // Lấy danh sách xe để truyền vào view Index
-            var vehiclesError = await _context.Vehicles.ToListAsync();
-            ViewBag.EditVehicle = vehicle; // Đặt lại dữ liệu xe để hiển thị form chỉnh sửa
-            return View("Index", vehiclesError);
+            var vehicles = await _vehicleService.GetAllVehicleAsync();
+            ViewBag.EditVehicle = vehicle;
+            return View("Index", vehicles);
         }
 
         [HttpPost]

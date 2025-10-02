@@ -13,25 +13,28 @@
         <div class="box-header blue">Create New Account</div>
         <div class="box-body">
             <form asp-controller="Account" asp-action="Create" method="post" class="form-grid">
-                <div>
-                    <label>Username</label>
-                    <input name="Username" required />
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input name="Username" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input name="Password" type="password" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input name="Email" type="email" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input name="ContactNumber" />
+                    </div>
                 </div>
-                <div>
-                    <label>Password</label>
-                    <input name="Password" type="password" required />
-                </div>
-                <div>
-                    <label>Email</label>
-                    <input name="Email" type="email" required />
-                </div>
-                <div>
-                    <label>Contact Number</label>
-                    <input name="ContactNumber" />
-                </div>
-                <div>
-                    <label>
-                        <input type="checkbox" name="IsActive" value="true" checked /> Active
+                <div class="checkbox-line mt-2">
+                    <label class="form-check">
+                        <input type="checkbox" name="IsActive" value="true" checked />
+                        <span>Active</span>
                     </label>
                 </div>
                 <div class="form-actions">
@@ -80,23 +83,23 @@
                                 <h3>Edit Account</h3>
                                 <form asp-controller="Account" asp-action="Edit" method="post">
                                     <input type="hidden" name="AccountId" value="@account.AccountId" />
-                                    <div>
+                                    <div class="form-group">
                                         <label>Username</label>
                                         <input name="Username" value="@account.Username" required />
                                     </div>
-                                    <div>
+                                    <div class="form-group">
                                         <label>Password</label>
                                         <input name="Password" value="@account.Password" type="password" />
                                     </div>
-                                    <div>   
+                                    <div class="form-group">
                                         <label>Email</label>
                                         <input name="Email" value="@account.Email" type="email" required />
                                     </div>
-                                    <div>
+                                    <div class="form-group">
                                         <label>Contact Number</label>
                                         <input name="ContactNumber" value="@account.ContactNumber" />
                                     </div>
-                                    <div>
+                                    <div class="checkbox-line">
                                         <label>
                                             <input type="checkbox" name="IsActive" value="true" @(account.IsActive ? "checked" : "") /> Active
                                         </label>
@@ -130,145 +133,229 @@
     </div>
 </div>
 
-<!-- giữ nguyên CSS và JS -->
+<!-- CSS chỉnh sửa -->
 <style>
     body {
-        font-family: Arial, sans-serif;
-        background: #f5f7fa;
-        margin: 0;
-        padding: 20px;
+        background-color: #f9fafb;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+
     .container {
         max-width: 1000px;
-        margin: auto;
+        margin: 20px auto;
+        padding: 20px;
     }
+
     .title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 24px;
         text-align: center;
-        margin-bottom: 20px;
+        color: #1f2937;
     }
+
+    /* Box */
     .box {
         background: #fff;
-        border-radius: 8px;
-        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        margin-bottom: 28px;
+        border: 1px solid #e5e7eb;
         overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
+
     .box-header {
-        padding: 10px 15px;
-        font-weight: bold;
+        font-weight: 600;
+        padding: 14px 18px;
+        font-size: 1rem;
     }
+
         .box-header.blue {
-            background: #3498db;
+            background: linear-gradient(90deg, #6366f1, #3b82f6); /* tím xanh gradient */
             color: #fff;
         }
+
         .box-header.gray {
-            background: #7f8c8d;
-            color: #fff;
+            background: #f3f4f6;
+            color: #111827;
         }
+
     .box-body {
-        padding: 15px;
+        padding: 20px;
     }
-    .form-grid {
+
+    /* Form grid */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .grid-2 {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
     }
-        .form-grid label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+
+    .form-group label {
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: #374151;
+    }
+
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+
+        .form-group input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #bfdbfe;
+            outline: none;
         }
-        .form-grid input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+
+    .checkbox-line {
+        margin-top: 12px;
+    }
+
+        .checkbox-line label {
+            font-weight: 500;
+            color: #374151;
         }
+
     .form-actions {
-        margin-top: 15px;
-        text-align: right;
+        margin-top: 18px;
     }
-    .btn {
-        padding: 6px 12px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        color: white;
-    }
-        .btn.green {
-            background: #2ecc71;
-        }
-        .btn.orange {
-            background: #e67e22;
-        }
-        .btn.red {
-            background: #e74c3c;
-        }
-        .btn.gray {
-            background: #7f8c8d;
-        }
-        .btn:hover {
-            opacity: 0.9;
-        }
+
+    /* Table */
     .table {
         width: 100%;
         border-collapse: collapse;
     }
+
         .table th, .table td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            text-align: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
         }
-        .table th {
-            background: #34495e;
+
+        .table thead {
+            background: linear-gradient(90deg, #6366f1, #3b82f6); /* gradient xanh tím */
+            color: white;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .table tbody tr:hover {
+            background: #eef2ff; /* tím nhạt */
+        }
+
+    /* Badge */
+    .badge {
+        padding: 5px 12px;
+        border-radius: 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+        .badge.active {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge.inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+    /* Buttons */
+    .btn {
+        padding: 7px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: 0.2s;
+    }
+
+        .btn.green {
+            background: #10b981;
             color: #fff;
         }
-    .badge {
-        padding: 4px 10px;
-        border-radius: 12px;
-        color: #fff;
-        font-size: 12px;
-    }
-        .badge.active {
-            background: #27ae60;
+
+            .btn.green:hover {
+                background: #059669;
+            }
+
+        .btn.orange {
+            background: #f59e0b;
+            color: #fff;
         }
-        .badge.inactive {
-            background: #c0392b;
+
+            .btn.orange:hover {
+                background: #d97706;
+            }
+
+        .btn.red {
+            background: #ef4444;
+            color: #fff;
         }
+
+            .btn.red:hover {
+                background: #dc2626;
+            }
+
+        .btn.gray {
+            background: #6b7280;
+            color: #fff;
+        }
+
+            .btn.gray:hover {
+                background: #4b5563;
+            }
+
     /* Modal */
     .modal {
         display: none;
         position: fixed;
-        z-index: 999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
+        z-index: 100;
+        inset: 0;
+        background-color: rgba(0,0,0,0.45);
+        justify-content: center;
+        align-items: center;
     }
+
     .modal-content {
-        background: #fff;
-        margin: 10% auto;
-        padding: 20px;
-        border-radius: 8px;
-        width: 400px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        position: relative;
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        width: 380px;
+        max-width: 95%;
+        text-align: left;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        animation: fadeIn 0.25s ease-in-out;
     }
+
         .modal-content h3 {
-            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
         }
+
     .close {
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        font-size: 20px;
+        float: right;
         cursor: pointer;
+        font-size: 1.5rem;
     }
 </style>
 <script>
     function openModal(id) {
-        document.getElementById(id).style.display = "block";
+        document.getElementById(id).style.display = "flex";
     }
     function closeModal(id) {
         document.getElementById(id).style.display = "none";
@@ -277,9 +364,7 @@
         event.preventDefault();
         const response = await fetch(`/Account/Delete`, {
             method: "POST",
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `id=${id}`
         });
         if (response.ok) {

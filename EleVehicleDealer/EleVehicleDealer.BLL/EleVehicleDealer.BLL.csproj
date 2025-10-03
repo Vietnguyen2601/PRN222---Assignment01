@@ -15,11 +15,4 @@
     <ProjectReference Include="..\EleVehicleDealer.DAL\EleVehicleDealer.DAL.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="DTOs\AccountDto\" />
-    <Folder Include="DTOs\ScheduleDto\" />
-    <Folder Include="DTOs\OrderDto\" />
-    <Folder Include="DTOs\VehicleDto\" />
-  </ItemGroup>
-
 </Project>

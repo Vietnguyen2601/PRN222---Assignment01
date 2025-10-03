@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EleVehicleDealer.BLL.Services
 {
-    public class StationCarService : IStationCardService
+    public class StationCarService : IStationCarService
     {
         private readonly EvdmsDatabaseContext _context;
         private readonly IStationCarRepository _stationCarRepository;

@@ -12,10 +12,10 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IStationService, StationService>();
-
+builder.Services.AddScoped<IStationCarRepository, StationCarRepository>();
 builder .Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
-
+builder.Services.AddScoped<IStationCarService, StationCarService>();
 // Thêm session
 builder.Services.AddSession();
 builder.Services.AddHttpContextAccessor();

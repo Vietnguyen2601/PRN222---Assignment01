@@ -9,10 +9,10 @@ namespace EleVehicleDealer.Presentation.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly ILogger<OrderController> _logger;
-        private readonly IStationCardService _stationCarService;
+        private readonly IStationCarService _stationCarService;
         private readonly IVehicleService _vehicleService;
 
-        public OrderController(IOrderService orderService, ILogger<OrderController> logger, IStationCardService stationCardService, IVehicleService vehicleService)
+        public OrderController(IOrderService orderService, ILogger<OrderController> logger, IStationCarService stationCardService, IVehicleService vehicleService)
         {
             _orderService = orderService;
             _logger = logger;

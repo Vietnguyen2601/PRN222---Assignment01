@@ -98,8 +98,6 @@
             <div class="order-card">
                 <div class="order-card-content">
                     <h4>Order #@o.OrderId</h4>
-                    <!-- Debug OrderId comparison -->
-                    <p class="debug-info">Debug: OrderId = @o.OrderId, editId = @editId, Match = @(editId == o.OrderId)</p>
                     @if (editId == o.OrderId)
                     {
                         <!-- Edit Form -->

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace EleVehicleDealer.BLL.Interfaces
 {
-    public interface IStationCardService
+    public interface IStationCarService
     {
         Task<int?> GetStationCarIdByStationNameAndModelAsync(string stationName, string model);
     }

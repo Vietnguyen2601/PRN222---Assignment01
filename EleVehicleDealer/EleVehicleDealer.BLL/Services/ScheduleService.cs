@@ -1,5 +1,5 @@
 ﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.Domain.EntityModels;
 using EleVehicleDealer.DAL.Repositories.IRepository;
 using System;
 using System.Collections.Generic;

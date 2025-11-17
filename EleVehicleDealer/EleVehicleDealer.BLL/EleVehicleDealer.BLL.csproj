@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EleVehicleDealer.DAL\EleVehicleDealer.DAL.csproj" />
+    <ProjectReference Include="..\EleVehicleDealer.Domain\EleVehicleDealer.Domain.csproj" />
   </ItemGroup>
 
 </Project>

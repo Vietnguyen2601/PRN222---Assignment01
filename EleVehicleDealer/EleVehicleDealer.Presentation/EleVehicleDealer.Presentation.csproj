@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EleVehicleDealer.BLL\EleVehicleDealer.BLL.csproj" />
+    <ProjectReference Include="..\EleVehicleDealer.Domain\EleVehicleDealer.Domain.csproj" />
   </ItemGroup>
 
 </Project>

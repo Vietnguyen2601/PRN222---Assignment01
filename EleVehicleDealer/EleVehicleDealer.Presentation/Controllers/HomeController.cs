@@ -1,21 +1,20 @@
 ﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.BLL.Services;
-using EleVehicleDealer.DAL.DBContext;
-using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.Domain.EntityModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EleVehicleDealer.Presentation.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly EvdmsDatabaseContext _context;
         private readonly IVehicleService _vehicleService;
+        private readonly IAccountService _accountService;
+        private readonly IOrderService _orderService;
 
-        public HomeController(EvdmsDatabaseContext context, IVehicleService vehicleService)
+        public HomeController(IVehicleService vehicleService, IAccountService accountService, IOrderService orderService)
         {
-            _context = context;
             _vehicleService = vehicleService;
+            _accountService = accountService;
+            _orderService = orderService;
         }
 
         public IActionResult Index()
@@ -115,9 +114,9 @@ namespace EleVehicleDealer.Presentation.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var vehicles = await _context.Vehicles.ToListAsync();
-            var accounts = await _context.Accounts.ToListAsync();
-            var orders = await _context.Orders.ToListAsync();
+            var vehicles = (await _vehicleService.GetAllVehicleAsync()).ToList();
+            var accounts = await _accountService.GetAllAsync();
+            var orders = (await _orderService.GetAllOrdersAsync()).ToList();
 
             ViewBag.Vehicles = vehicles;
             ViewBag.Accounts = accounts;

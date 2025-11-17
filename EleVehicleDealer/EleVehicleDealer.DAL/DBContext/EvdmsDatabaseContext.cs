@@ -1,4 +1,4 @@
-﻿using EleVehicleDealer.DAL.EntityModels;
+﻿using EleVehicleDealer.Domain.EntityModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;

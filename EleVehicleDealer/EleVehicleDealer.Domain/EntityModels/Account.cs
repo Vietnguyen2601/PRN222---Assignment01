@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EleVehicleDealer.DAL.EntityModels;
+namespace EleVehicleDealer.Domain.EntityModels;
 
 public partial class Account
 {

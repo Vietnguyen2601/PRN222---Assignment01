@@ -1,4 +1,4 @@
-﻿using EleVehicleDealer.DAL.EntityModels;
+﻿using EleVehicleDealer.Domain.EntityModels;
 using System;
 using System.Collections;
 using System.Collections.Generic;

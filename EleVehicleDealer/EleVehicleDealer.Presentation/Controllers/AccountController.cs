@@ -1,5 +1,5 @@
 ﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.Domain.EntityModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EleVehicleDealer.Presentation.Controllers

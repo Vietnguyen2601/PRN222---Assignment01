@@ -1,5 +1,5 @@
 ﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@model IEnumerable<EleVehicleDealer.DAL.EntityModels.Order>
+@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Order>
 @{
     var editOrder = ViewBag.EditOrder as EleVehicleDealer.Presentation.Modal.CreateOrderViewModel;
     var message = TempData["Message"] as string;
@@ -93,7 +93,7 @@
 
     <!-- Danh sách đơn hàng -->
     <div class="order-grid" id="orderGrid" data-columns="3">
-        @foreach (var o in Model ?? Enumerable.Empty<EleVehicleDealer.DAL.EntityModels.Order>())
+        @foreach (var o in Model ?? Enumerable.Empty<EleVehicleDealer.Domain.EntityModels.Order>())
         {
             <div class="order-card">
                 <div class="order-card-content">

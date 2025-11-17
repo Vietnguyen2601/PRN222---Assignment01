@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.Domain.EntityModels;
 using EleVehicleDealer.DAL.Repositories.IRepository;
 
 namespace EleVehicleDealer.BLL.Services

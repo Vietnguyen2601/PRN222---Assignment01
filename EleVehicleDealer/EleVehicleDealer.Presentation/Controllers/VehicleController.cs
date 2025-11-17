@@ -1,8 +1,6 @@
 ﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.DAL.DBContext;
-using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.Domain.EntityModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EleVehicleDealer.Presentation.Controllers
 {
@@ -10,13 +8,11 @@ namespace EleVehicleDealer.Presentation.Controllers
     {
         private readonly IVehicleService _vehicleService;
         private readonly IStationService _stationService;
-        private readonly EvdmsDatabaseContext _context;
 
-        public VehicleController(IVehicleService vehicleService, IStationService stationService, EvdmsDatabaseContext context)
+        public VehicleController(IVehicleService vehicleService, IStationService stationService)
         {
             _vehicleService = vehicleService;
             _stationService = stationService;
-            _context = context;
         }
 
         public async Task<IActionResult> Index(int? editId)
@@ -201,4 +197,3 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
     }
 }
-

@@ -1,6 +1,6 @@
 ﻿using EleVehicleDealer.BLL.Interfaces;
 using EleVehicleDealer.DAL.DBContext;
-using EleVehicleDealer.DAL.EntityModels;
+using EleVehicleDealer.Domain.EntityModels;
 using EleVehicleDealer.DAL.Repositories.IRepository;
 using EleVehicleDealer.DAL.Repositories.Repository;
 using System;

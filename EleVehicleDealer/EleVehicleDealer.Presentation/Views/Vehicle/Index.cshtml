@@ -3,9 +3,9 @@
     ViewData["Title"] = "Vehicle Management";
 }
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@model IEnumerable<EleVehicleDealer.DAL.EntityModels.Vehicle>
+@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Vehicle>
 @{
-    var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.DAL.EntityModels.Vehicle;
+    var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.Domain.EntityModels.Vehicle;
     var message = TempData["Message"] as string;
     var error = TempData["Error"] as string;
 }

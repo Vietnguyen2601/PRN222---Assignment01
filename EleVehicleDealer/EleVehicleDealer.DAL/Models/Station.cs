@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EleVehicleDealer.Domain.EntityModels;
+namespace EleVehicleDealer.DAL.Models;
 
 public partial class Station
 {
@@ -18,8 +18,6 @@ public partial class Station
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
 
     public virtual ICollection<StationCar> StationCars { get; set; } = new List<StationCar>();
 }

@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EleVehicleDealer.BLL", "Ele
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EleVehicleDealer.DAL", "EleVehicleDealer.DAL\EleVehicleDealer.DAL.csproj", "{60EB24F3-3CA4-4815-A6CF-8319BBBC81EC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EleVehicleDealer.Domain", "\EleVehicleDealer.Domain\EleVehicleDealer.Domain.csproj", "{4513F349-120D-4D76-98A1-750AE566C7A9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EleVehicleDealer.Domain", "EleVehicleDealer.Domain\EleVehicleDealer.Domain.csproj", "{4513F349-120D-4D76-98A1-750AE566C7A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

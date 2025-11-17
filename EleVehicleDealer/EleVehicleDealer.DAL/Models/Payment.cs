@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EleVehicleDealer.Domain.EntityModels;
+namespace EleVehicleDealer.DAL.Models;
 
-public partial class Contract
+public partial class Payment
 {
-    public int ContractId { get; set; }
+    public int PaymentId { get; set; }
 
     public int OrderId { get; set; }
 
-    public DateTime ContractDate { get; set; }
+    public decimal Amount { get; set; }
 
-    public string Terms { get; set; } = null!;
+    public DateTime PaymentDate { get; set; }
 
-    public string? Signature { get; set; }
+    public string PaymentMethod { get; set; } = null!;
 
     public string Status { get; set; } = null!;
 

@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EleVehicleDealer.Domain.EntityModels;
+namespace EleVehicleDealer.DAL.Models;
 
-public partial class Report
+public partial class AccountRole
 {
-    public int ReportId { get; set; }
-
-    public string ReportType { get; set; } = null!;
-
-    public DateTime GeneratedDate { get; set; }
-
-    public string Data { get; set; } = null!;
+    public int AccountRoleId { get; set; }
 
     public int AccountId { get; set; }
+
+    public int RoleId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -22,4 +18,6 @@ public partial class Report
     public bool IsActive { get; set; }
 
     public virtual Account Account { get; set; } = null!;
+
+    public virtual Role Role { get; set; } = null!;
 }

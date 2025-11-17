@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EleVehicleDealer.Domain.EntityModels;
+namespace EleVehicleDealer.DAL.Models;
 
 public partial class Schedule
 {

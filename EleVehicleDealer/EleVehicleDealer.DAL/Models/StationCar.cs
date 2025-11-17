@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EleVehicleDealer.Domain.EntityModels;
+namespace EleVehicleDealer.DAL.Models;
 
 public partial class StationCar
 {
@@ -19,7 +19,7 @@ public partial class StationCar
 
     public bool IsActive { get; set; }
 
-    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
 

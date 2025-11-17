@@ -3,7 +3,7 @@
     ViewData["Title"] = "Vehicle Catalog";
 }
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Vehicle>
+@model IEnumerable<EleVehicleDealer.Domain.DTOs.Vehicles.VehicleCatalogDto>
 @{
     var searchTerm = ViewBag.SearchTerm as string;
     var type = ViewBag.Type as string;
@@ -57,10 +57,9 @@
                             <p class="card-text">
                                 <strong>Type:</strong> @v.Type<br />
                                 <strong>Color:</strong> @v.Color<br />
-                                <strong>Price:</strong> $@v.Price.ToString("C")<br />
-                                <strong>Created:</strong> @v.CreatedAt.ToString("dd/MM/yyyy")<br />
-                                <strong>Active:</strong> @v.IsActive<br />
-                                <strong>Station:</strong> @(v.StationCars.FirstOrDefault()?.StationId.ToString() ?? "N/A")
+                                <strong>Price:</strong> $@v.Price.ToString("N2")<br />
+                                <strong>Manufacturer:</strong> @v.Manufacturer<br />
+                                <strong>Active:</strong> @(v.IsActive ? "Yes" : "No")
                             </p>
                             <div class="d-flex gap-2">
                                 <a asp-action="Compare" asp-route-vehicleIds="@v.VehicleId" class="btn btn-info btn-sm flex-fill">Compare</a>

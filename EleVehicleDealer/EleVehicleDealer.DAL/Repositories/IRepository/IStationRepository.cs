@@ -1,13 +1,13 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using EleVehicleDealer.Domain.EntityModels;
+using EleVehicleDealer.DAL.Models;
 
 namespace EleVehicleDealer.DAL.Repositories.IRepository
 {
     public interface IStationRepository
     {
         Task<IEnumerable<Station>> GetAllStationsAsync();
+        Task<Station?> GetByIdAsync(int stationId);
+        Task<IEnumerable<Station>> GetActiveStationsAsync();
     }
 }

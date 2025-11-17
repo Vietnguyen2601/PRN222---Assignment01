@@ -1,5 +1,8 @@
-﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.Domain.EntityModels;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.Domain.DTOs.Accounts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EleVehicleDealer.Presentation.Controllers
@@ -33,11 +36,7 @@ namespace EleVehicleDealer.Presentation.Controllers
             HttpContext.Session.SetString("Username", account.Username);
             HttpContext.Session.SetInt32("AccountId", account.AccountId);
 
-            // Lấy role của account
-            var roles = account.AccountRoles
-                .Where(ar => ar.IsActive && ar.Role.IsActive)
-                .Select(ar => ar.Role.RoleName)
-                .ToList();
+            var roles = account.Roles ?? new List<string>();
 
             if (roles.Contains("Admin") || roles.Contains("Staff"))
             {
@@ -81,22 +80,14 @@ namespace EleVehicleDealer.Presentation.Controllers
                 return View();
             }
 
-            var newAccount = new Account
+            var newAccount = new AccountCreateDto
             {
                 Username = username,
-                Password = password, //Demo: nên hash trong production
+                Password = password,
                 Email = email,
                 ContactNumber = contactNumber,
-                CreatedAt = DateTime.Now,
-                IsActive = true
+                RoleIds = new List<int> { 3 }
             };
-
-            // Gán mặc định role "Customer"
-            newAccount.AccountRoles.Add(new AccountRole
-            {
-                RoleId = 3, // giả sử trong DB RoleId = 2 là Customer
-                IsActive = true
-            });
 
             await _accountService.RegisterAsync(newAccount);
 
@@ -113,7 +104,7 @@ namespace EleVehicleDealer.Presentation.Controllers
         public async Task<IActionResult> Index()
         {
             var accounts = await _accountService.GetAllAsync();
-            return View("AccountManagement", accounts.ToList());
+            return View("AccountManagement", accounts);
         }
 
         public IActionResult Create()   
@@ -122,12 +113,21 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Username,Password,Email,ContactNumber,IsActive")] Account account)
+        [HttpPost]
+        public async Task<IActionResult> Create(string username, string password, string email, string? contactNumber, bool isActive = true)
         {
             if (!ModelState.IsValid) return RedirectToAction(nameof(Index));
-            account.CreatedAt = DateTime.Now;
-            account.IsActive = Request.Form["IsActive"] == "on" || Request.Form["IsActive"] == "true";
-            await _accountService.CreateAsync(account);
+
+            var dto = new AccountCreateDto
+            {
+                Username = username,
+                Password = password,
+                Email = email,
+                ContactNumber = contactNumber,
+                RoleIds = new List<int> { 2 }
+            };
+
+            await _accountService.CreateAsync(dto);
             return RedirectToAction(nameof(Index));
         }
 
@@ -140,21 +140,23 @@ namespace EleVehicleDealer.Presentation.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit([Bind("AccountId,Username,Password,Email,ContactNumber,IsActive")] Account account)
+        public async Task<IActionResult> Edit(int accountId, string username, string? password, string email, string? contactNumber, bool isActive = true)
         {
             if (!ModelState.IsValid)
                 return RedirectToAction(nameof(Index));
 
-            var dbAccount = await _accountService.GetByIdAsync(account.AccountId);
-            if (dbAccount == null)
-                return RedirectToAction(nameof(Index));
+            var dto = new AccountUpdateDto
+            {
+                AccountId = accountId,
+                Username = username,
+                Password = password,
+                Email = email,
+                ContactNumber = contactNumber,
+                IsActive = isActive,
+                RoleIds = new List<int>()
+            };
 
-            if (string.IsNullOrWhiteSpace(account.Password))
-                account.Password = dbAccount.Password;
-
-            account.UpdatedAt = DateTime.Now;
-
-            await _accountService.UpdateAsync(account);
+            await _accountService.UpdateAsync(dto);
             return RedirectToAction(nameof(Index));
         }
 

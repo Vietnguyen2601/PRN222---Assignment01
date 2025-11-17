@@ -1,14 +1,13 @@
-﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.DAL.DBContext;
-using EleVehicleDealer.Domain.EntityModels;
-using EleVehicleDealer.DAL.Repositories.IRepository;
-using EleVehicleDealer.DAL.Repositories.Repository;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.DAL.DBContext;
+using EleVehicleDealer.DAL.Models;
+using EleVehicleDealer.DAL.Repositories.IRepository;
+using EleVehicleDealer.Domain.DTOs.Vehicles;
+using EleVehicleDealer.BLL.Mappers;
+using Microsoft.EntityFrameworkCore;
 
 namespace EleVehicleDealer.BLL.Services
 {
@@ -23,10 +22,11 @@ namespace EleVehicleDealer.BLL.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<Vehicle> CreateAsync(Vehicle vehicle)
+        public async Task<VehicleDetailDto?> CreateAsync(VehicleCreateDto vehicle)
         {
-            vehicle.IsActive = true;
-            return await _vehicleRepository.CreateVehicleAsync(vehicle);
+            var entity = MapToVehicle(vehicle);
+            var created = await _vehicleRepository.CreateVehicleAsync(entity);
+            return created.ToVehicleDetailDto();
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -34,94 +34,95 @@ namespace EleVehicleDealer.BLL.Services
             return await _vehicleRepository.DeleteByIdAsync(id);
         }
 
-        public async Task<IEnumerable<Vehicle>> GetAllVehicleAsync()
+        public async Task<IEnumerable<VehicleCatalogDto>> GetAllVehicleAsync()
         {
-            return await _vehicleRepository.GetAllVehicleAsync();
+            var vehicles = await _vehicleRepository.GetAllVehicleAsync();
+            return vehicles.ToVehicleCatalogDtos();
         }
 
-        public async Task<Vehicle> GetByIdAsync(int id)
+        public async Task<VehicleDetailDto?> GetByIdAsync(int id)
         {
-            return await _context.Vehicles.FindAsync(id); ;
+            var vehicle = await _context.Vehicles
+                .Include(v => v.StationCars)
+                    .ThenInclude(sc => sc.Station)
+                .FirstOrDefaultAsync(v => v.VehicleId == id);
+            return vehicle.ToVehicleDetailDto();
         }
 
-        public async Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync()
+        public async Task<IEnumerable<VehicleCatalogDto>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice)
         {
-            return await _vehicleRepository.GetAvailableVehiclesAsync();
+            var vehicles = await _vehicleRepository.GetVehiclesByPriceRangeAsync(minPrice, maxPrice);
+            return vehicles.ToVehicleCatalogDtos();
         }
 
-        public async Task<IEnumerable<Vehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice)
+        public async Task<IEnumerable<VehicleCatalogDto>> GetVehiclesByTypeAsync(string type)
         {
-            return await _vehicleRepository.GetVehiclesByPriceRangeAsync(minPrice, maxPrice);
+            var vehicles = await _vehicleRepository.GetVehiclesByTypeAsync(type);
+            return vehicles.ToVehicleCatalogDtos();
         }
 
-        public async Task<IEnumerable<Vehicle>> GetVehiclesByTypeAsync(string type)
+        public async Task<IEnumerable<VehicleCatalogDto>> SearchVehiclesAsync(string searchTerm)
         {
-            return await _vehicleRepository.GetVehiclesByTypeAsync(type);
+            var vehicles = await _vehicleRepository.SearchVehiclesAsync(searchTerm);
+            return vehicles.ToVehicleCatalogDtos();
         }
 
-        public async Task<IEnumerable<Order>> GetVehicleOrderHistoryAsync(int vehicleId)
-        {
-            return await _vehicleRepository.GetVehicleOrderHistoryAsync(vehicleId);
-        }
-
-        public async Task<int> GetTotalStockAsync()
-        {
-            return await _vehicleRepository.GetTotalStockAsync();
-        }
-
-        public async Task<IEnumerable<Vehicle>> SearchVehiclesAsync(string searchTerm)
-        {
-            return await _vehicleRepository.SearchVehiclesAsync(searchTerm);
-        }
-
-        public async Task<bool> UpdateStockQuantityAsync(int vehicleId, int quantity)
-        {
-            throw new NotImplementedException("UpdateStockQuantityAsync is not applicable without Availability. Please redefine the logic if needed.");
-        }
-
-        public async Task<Vehicle> UpdateAsync(Vehicle vehicle)
+        public async Task<VehicleDetailDto?> UpdateAsync(VehicleUpdateDto vehicle)
         {
             if (vehicle == null)
-                throw new ArgumentNullException(nameof(vehicle));
-
-            Console.WriteLine($"Updating Vehicle: Id={vehicle.VehicleId}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}, IsActive={vehicle.IsActive}");
-            if (vehicle.VehicleId <= 0)
-                throw new ArgumentException("VehicleId is required and must be a positive integer.", nameof(vehicle.VehicleId));
+                throw new System.ArgumentNullException(nameof(vehicle));
 
             var existingVehicle = await _context.Vehicles.FindAsync(vehicle.VehicleId);
             if (existingVehicle == null)
             {
-                Console.WriteLine($"Error: Vehicle with Id={vehicle.VehicleId} not found");
                 return null;
             }
 
-            _context.Entry(existingVehicle).CurrentValues.SetValues(vehicle);
+            existingVehicle.Model = vehicle.Model;
+            existingVehicle.Type = vehicle.Type;
+            existingVehicle.Color = vehicle.Color;
+            existingVehicle.Price = vehicle.Price;
+            existingVehicle.Manufacturer = vehicle.Manufacturer;
+            existingVehicle.BatteryCapacity = vehicle.BatteryCapacity;
+            existingVehicle.Range = vehicle.Range;
+            existingVehicle.IsActive = vehicle.IsActive;
             existingVehicle.UpdatedAt = DateTime.Now;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                // Xác nhận từ DB
-                var verifiedVehicle = await _context.Vehicles.AsNoTracking().FirstOrDefaultAsync(v => v.VehicleId == vehicle.VehicleId);
-                Console.WriteLine($"Verified IsActive from DB after save: {verifiedVehicle?.IsActive}");
-                Console.WriteLine($"Update successful for VehicleId={vehicle.VehicleId}, IsActive={existingVehicle.IsActive}");
-                return existingVehicle;
-            }
-            catch (DbUpdateException ex)
-            {
-                Console.WriteLine($"DbUpdateException: {ex.InnerException?.Message ?? ex.Message}");
-                return null;
-            }
+            await _context.SaveChangesAsync();
+
+            var reload = await _context.Vehicles
+                .Include(v => v.StationCars)
+                    .ThenInclude(sc => sc.Station)
+                .FirstOrDefaultAsync(v => v.VehicleId == vehicle.VehicleId);
+
+            return reload.ToVehicleDetailDto();
         }
 
-        public async Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId)
+        public async Task<IEnumerable<VehicleCatalogDto>> GetVehiclesByStationAsync(int stationId)
         {
-            return await _vehicleRepository.GetVehiclesByStationAsync(stationId);
+            var vehicles = await _vehicleRepository.GetVehiclesByStationAsync(stationId);
+            return vehicles.ToVehicleCatalogDtos();
         }
 
         public async Task<IEnumerable<decimal>> GetVehiclePriceByModelAsync(string model)
         {
             return await _vehicleRepository.GetVehiclePriceByModelAsync(model);
+        }
+
+        private static Vehicle MapToVehicle(VehicleCreateDto dto)
+        {
+            return new Vehicle
+            {
+                Model = dto.Model,
+                Type = dto.Type,
+                Color = dto.Color,
+                Price = dto.Price,
+                Manufacturer = dto.Manufacturer,
+                BatteryCapacity = dto.BatteryCapacity,
+                Range = dto.Range,
+                CreatedAt = System.DateTime.Now,
+                IsActive = true
+            };
         }
     }
 }

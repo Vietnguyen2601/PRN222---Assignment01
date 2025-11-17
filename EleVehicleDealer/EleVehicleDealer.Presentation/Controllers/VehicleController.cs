@@ -1,5 +1,8 @@
-﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.Domain.EntityModels;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.Domain.DTOs.Vehicles;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EleVehicleDealer.Presentation.Controllers
@@ -43,8 +46,19 @@ namespace EleVehicleDealer.Presentation.Controllers
             }
 
             bool wasActive = vehicle.IsActive;
-            vehicle.IsActive = isActive;
-            var updatedVehicle = await _vehicleService.UpdateAsync(vehicle);
+            var updateDto = new VehicleUpdateDto
+            {
+                VehicleId = vehicle.VehicleId,
+                Model = vehicle.Model,
+                Type = vehicle.Type,
+                Color = vehicle.Color,
+                Price = vehicle.Price,
+                Manufacturer = vehicle.Manufacturer,
+                BatteryCapacity = vehicle.BatteryCapacity,
+                Range = vehicle.Range,
+                IsActive = isActive
+            };
+            var updatedVehicle = await _vehicleService.UpdateAsync(updateDto);
             if (updatedVehicle == null)
             {
                 TempData["Error"] = $"Lỗi khi cập nhật trạng thái xe ID {id}.";
@@ -62,7 +76,7 @@ namespace EleVehicleDealer.Presentation.Controllers
 
         public async Task<IActionResult> Catalog(string searchTerm, string type, decimal? minPrice, decimal? maxPrice)
         {
-            IEnumerable<Vehicle> vehicles;
+            IEnumerable<VehicleCatalogDto> vehicles;
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
@@ -97,7 +111,7 @@ namespace EleVehicleDealer.Presentation.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var vehicles = new List<Vehicle>();
+            var vehicles = new List<VehicleDetailDto>();
             foreach (var id in vehicleIds)
             {
                 var vehicle = await _vehicleService.GetByIdAsync(id);
@@ -117,15 +131,14 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Vehicle vehicle)
+        public async Task<IActionResult> Create(VehicleCreateDto vehicle)
         {
             if (!ModelState.IsValid)
             {
                 ViewBag.EditVehicle = null;
                 return View("Index", await _vehicleService.GetAllVehicleAsync());
             }
-            // Loại bỏ logic Availability
-            vehicle.IsActive = true;
+
             await _vehicleService.CreateAsync(vehicle);
             TempData["Message"] = "Vehicle created successfully!";
             return RedirectToAction(nameof(Index));
@@ -133,9 +146,8 @@ namespace EleVehicleDealer.Presentation.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Update(Vehicle vehicle)
+        public async Task<IActionResult> Update(VehicleUpdateDto vehicle)
         {
-            Console.WriteLine($"Received vehicle: Id={vehicle.VehicleId}, IsActive={vehicle.IsActive}, Model={vehicle.Model}, Type={vehicle.Type}, Color={vehicle.Color}, Price={vehicle.Price}");
             if (vehicle.VehicleId <= 0)
             {
                 TempData["Error"] = "Invalid VehicleId. Please try again.";
@@ -144,41 +156,21 @@ namespace EleVehicleDealer.Presentation.Controllers
 
             if (!ModelState.IsValid)
             {
-                Console.WriteLine($"ModelState is invalid. Errors: {string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))}");
+                var vehicles = await _vehicleService.GetAllVehicleAsync();
+                ViewBag.EditVehicle = vehicle;
+                return View("Index", vehicles);
             }
 
-            if (ModelState.IsValid)
+            var updatedVehicle = await _vehicleService.UpdateAsync(vehicle);
+            if (updatedVehicle == null)
             {
-                var existingVehicle = await _vehicleService.GetByIdAsync(vehicle.VehicleId);
-                Console.WriteLine($"Existing vehicle: Id={existingVehicle?.VehicleId}, IsActive={existingVehicle?.IsActive}");
-                if (existingVehicle == null)
-                {
-                    TempData["Error"] = $"Không tìm thấy xe với ID {vehicle.VehicleId}.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                existingVehicle.Model = vehicle.Model;
-                existingVehicle.Type = vehicle.Type;
-                existingVehicle.Color = vehicle.Color;
-                existingVehicle.Price = vehicle.Price;
-                existingVehicle.IsActive = vehicle.IsActive;
-
-                var updatedVehicle = await _vehicleService.UpdateAsync(existingVehicle);
-                Console.WriteLine($"Update result: {updatedVehicle != null}");
-                if (updatedVehicle == null)
-                {
-                    TempData["Error"] = $"Lỗi khi cập nhật xe ID {vehicle.VehicleId}.";
-                }
-                else
-                {
-                    TempData["Message"] = "Đã cập nhật xe thành công.";
-                }
-                return RedirectToAction(nameof(Index));
+                TempData["Error"] = $"Lỗi khi cập nhật xe ID {vehicle.VehicleId}.";
             }
-
-            var vehicles = await _vehicleService.GetAllVehicleAsync();
-            ViewBag.EditVehicle = vehicle;
-            return View("Index", vehicles);
+            else
+            {
+                TempData["Message"] = "Đã cập nhật xe thành công.";
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]

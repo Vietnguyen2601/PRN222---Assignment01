@@ -1,5 +1,8 @@
-﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.Domain.EntityModels;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.Domain.DTOs.Vehicles;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EleVehicleDealer.Presentation.Controllers
@@ -23,7 +26,7 @@ namespace EleVehicleDealer.Presentation.Controllers
         }
         public async Task<IActionResult> Home()
         {
-            var vehicles = await _vehicleService.GetAllVehicleAsync();
+            var vehicles = (await _vehicleService.GetAllVehicleAsync()).ToList();
 
             var vehicleTypes = vehicles.Select(v => v.Type).Distinct().ToList();
             var vehicleModels = vehicles.Select(v => v.Model).Distinct().ToList();
@@ -34,7 +37,7 @@ namespace EleVehicleDealer.Presentation.Controllers
             var minPrice = decimal.TryParse(Request.Query["minPrice"], out var min) ? min : (decimal?)null;
             var maxPrice = decimal.TryParse(Request.Query["maxPrice"], out var max) ? max : (decimal?)null;
 
-            IQueryable<Vehicle> query = vehicles.AsQueryable();
+            IQueryable<VehicleCatalogDto> query = vehicles.AsQueryable();
 
             if (!string.IsNullOrEmpty(filterType) && filterType != "All")
             {
@@ -81,7 +84,6 @@ namespace EleVehicleDealer.Presentation.Controllers
 
             vehicles = query.ToList();
 
-            // Truyền dữ liệu qua ViewBag
             ViewBag.VehicleTypes = vehicleTypes;
             ViewBag.VehicleModels = vehicleModels;
             ViewBag.SortBy = sortBy;
@@ -89,8 +91,6 @@ namespace EleVehicleDealer.Presentation.Controllers
             ViewBag.FilterModel = filterModel;
             ViewBag.MinPrice = minPrice;
             ViewBag.MaxPrice = maxPrice;
-
-            // Lấy error từ TempData nếu có
             ViewBag.Error = TempData["Error"] as string;
 
             return View(vehicles);
@@ -115,7 +115,7 @@ namespace EleVehicleDealer.Presentation.Controllers
             }
 
             var vehicles = (await _vehicleService.GetAllVehicleAsync()).ToList();
-            var accounts = await _accountService.GetAllAsync();
+            var accounts = (await _accountService.GetAllAsync()).ToList();
             var orders = (await _orderService.GetAllOrdersAsync()).ToList();
 
             ViewBag.Vehicles = vehicles;

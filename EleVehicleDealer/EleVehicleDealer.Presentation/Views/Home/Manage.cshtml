@@ -1,11 +1,10 @@
 ﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@using EleVehicleDealer.Domain.EntityModels
 @model dynamic
 @{
     var username = Context.Session?.GetString("Username") ?? string.Empty;
-    var vehicles = ViewBag.Vehicles as List<Vehicle> ?? new List<Vehicle>();
-    var accounts = ViewBag.Accounts as List<Account> ?? new List<Account>();
-    var orders = ViewBag.Orders as List<Order> ?? new List<Order>();
+    var vehicles = ViewBag.Vehicles as List<EleVehicleDealer.Domain.DTOs.Vehicles.VehicleCatalogDto> ?? new List<EleVehicleDealer.Domain.DTOs.Vehicles.VehicleCatalogDto>();
+    var accounts = ViewBag.Accounts as List<EleVehicleDealer.Domain.DTOs.Accounts.AccountSummaryDto> ?? new List<EleVehicleDealer.Domain.DTOs.Accounts.AccountSummaryDto>();
+    var orders = ViewBag.Orders as List<EleVehicleDealer.Domain.DTOs.Orders.OrderSummaryDto> ?? new List<EleVehicleDealer.Domain.DTOs.Orders.OrderSummaryDto>();
 }
 
 <header class="site-header">
@@ -58,7 +57,7 @@
                                 <td>@a.AccountId</td>
                                 <td>@a.Username</td>
                                 <td>@a.Email</td>
-                                <td>@(string.Join(", ", a.AccountRoles.Where(ar => ar.IsActive && ar.Role.IsActive).Select(ar => ar.Role.RoleName)))</td>
+                                <td>@(string.Join(", ", a.Roles))</td>
                                 <td>
                                     <a asp-controller="Account" asp-action="Index" asp-route-id="@a.AccountId" class="btn-edit">Edit</a>
                                     <form asp-controller="Account" asp-action="Delete" method="post" style="display:inline;">
@@ -99,7 +98,7 @@
                                 <td>@v.Model</td>
                                 <td>@v.Type</td>
                                 <td>@v.Color</td>
-                                <td>$@v.Price.ToString("C")</td>
+                                <td>@v.Price.ToString("C")</td>
                                 <td>
                                     <a asp-controller="Vehicle" asp-action="Index" asp-route-id="@v.VehicleId" class="btn-edit">Edit</a>
                                     <form asp-controller="Vehicle" asp-action="Delete" method="post" style="display:inline;">
@@ -128,7 +127,8 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Account ID</th>
+                            <th>Customer</th>
+                            <th>Staff</th>
                             <th>Total Price</th>
                             <th>Order Date</th>
                             <th>Status</th>
@@ -140,13 +140,14 @@
                         {
                             <tr>
                                 <td>@o.OrderId</td>
-                                <td>@o.CustomerId</td>
-                                <td>$@o.TotalPrice.ToString("C")</td>
+                                <td>@o.CustomerName</td>
+                                <td>@o.StaffName</td>
+                                <td>@o.TotalPrice.ToString("C")</td>
                                 <td>@o.OrderDate.ToString("yyyy-MM-dd")</td>
                                 <td>@(o.Status ?? "Pending")</td>
                                 <td>
                                     <a asp-controller="Order" asp-action="OrderManager" asp-route-id="@o.OrderId" class="btn-edit">Edit</a>
-                                    <form asp-controller="Order" asp-action="Delete" method="post" style="display:inline;">
+                                    <form asp-controller="Order" asp-action="SoftDelete" method="post" style="display:inline;">
                                         <input type="hidden" name="id" value="@o.OrderId" />
                                         <button type="submit" class="btn-delete" onclick="return confirm('Delete this order?')">Delete</button>
                                     </form>

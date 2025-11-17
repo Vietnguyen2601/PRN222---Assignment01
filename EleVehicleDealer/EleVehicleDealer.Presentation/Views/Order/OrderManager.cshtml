@@ -1,7 +1,8 @@
 ﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Order>
+@model IEnumerable<EleVehicleDealer.Domain.DTOs.Orders.OrderSummaryDto>
 @{
     var editOrder = ViewBag.EditOrder as EleVehicleDealer.Presentation.Modal.CreateOrderViewModel;
+    var editOrderDetail = ViewBag.EditOrderDetail as EleVehicleDealer.Domain.DTOs.Orders.OrderDetailDto;
     var message = TempData["Message"] as string;
     var error = TempData["Error"] as string;
     int? editId = ViewBag.EditId;
@@ -81,6 +82,11 @@
                         <input id="PromotionId" name="PromotionId" value="@editOrder?.PromotionId" class="input-field" type="number" />
                         <span class="error-message" asp-validation-for="@editOrder.PromotionId"></span>
                     </div>
+                    <div class="form-group">
+                        <label for="Quantity">Quantity</label>
+                        <input id="Quantity" name="Quantity" value="@editOrder?.Quantity ?? 1" class="input-field" type="number" min="1" required />
+                        <span class="error-message" asp-validation-for="@editOrder.Quantity"></span>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group submit-group">
@@ -93,39 +99,36 @@
 
     <!-- Danh sách đơn hàng -->
     <div class="order-grid" id="orderGrid" data-columns="3">
-        @foreach (var o in Model ?? Enumerable.Empty<EleVehicleDealer.Domain.EntityModels.Order>())
+        @foreach (var o in Model ?? Enumerable.Empty<EleVehicleDealer.Domain.DTOs.Orders.OrderSummaryDto>())
         {
             <div class="order-card">
                 <div class="order-card-content">
                     <h4>Order #@o.OrderId</h4>
                     @if (editId == o.OrderId)
                     {
+                        var detail = (editOrderDetail != null && editOrderDetail.OrderId == o.OrderId) ? editOrderDetail : null;
                         <!-- Edit Form -->
                         <form asp-controller="Order" asp-action="Update" method="post" class="order-form" id="edit-form-@o.OrderId">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="OrderId" value="@o.OrderId" />
+                            <input type="hidden" name="orderId" value="@o.OrderId" />
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="CustomerId_@o.OrderId">Customer ID</label>
-                                    <input id="CustomerId_@o.OrderId" name="CustomerId" value="@o.CustomerId" class="input-field" type="number" required min="1" />
-                                    <span class="error-message" asp-validation-for="@o.CustomerId"></span>
+                                    <label>Customer</label>
+                                    <input class="input-field" value="@detail?.CustomerName ?? o.CustomerName" readonly />
                                 </div>
                                 <div class="form-group">
-                                    <label for="StationCarId_@o.OrderId">Inventory ID</label>
-                                    <input id="StationCarId_@o.OrderId" name="StationCarId" value="@o.StationCarId" class="input-field" type="text" required />
-                                    <span class="error-message" asp-validation-for="@o.StationCarId"></span>
+                                    <label>Staff</label>
+                                    <input class="input-field" value="@detail?.StaffName ?? o.StaffName" readonly />
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="OrderDate_@o.OrderId">Order Date</label>
-                                    <input id="OrderDate_@o.OrderId" name="OrderDate" value="@o.OrderDate.ToString("yyyy-MM-ddTHH:mm")" class="input-field" type="datetime-local" required />
-                                    <span class="error-message" asp-validation-for="@o.OrderDate"></span>
+                                    <label>Order Date</label>
+                                    <input class="input-field" value="@o.OrderDate.ToString("dd/MM/yyyy HH:mm")" readonly />
                                 </div>
                                 <div class="form-group">
-                                    <label for="TotalPrice_@o.OrderId">Total Price</label>
-                                    <input id="TotalPrice_@o.OrderId" name="TotalPrice" value="@o.TotalPrice" class="input-field" type="number" step="0.01" required />
-                                    <span class="error-message" asp-validation-for="@o.TotalPrice"></span>
+                                    <label>Total Price</label>
+                                    <input class="input-field" value="@o.TotalPrice.ToString("C")" readonly />
                                 </div>
                             </div>
                             <div class="form-row">
@@ -133,23 +136,38 @@
                                     <label>Status</label>
                                     <div class="status-radio-group">
                                         <label class="radio-label">
-                                            <input type="radio" name="Status" value="Pending" @(o.Status == "Pending" ? "checked" : "") required />
+                                            <input type="radio" name="status" value="Pending" @(o.Status == "Pending" ? "checked" : "") required />
                                             <span class="radio-text">Pending</span>
                                         </label>
                                         <label class="radio-label">
-                                            <input type="radio" name="Status" value="Processing" @(o.Status == "Processing" ? "checked" : "") required />
+                                            <input type="radio" name="status" value="Processing" @(o.Status == "Processing" ? "checked" : "") required />
                                             <span class="radio-text">Processing</span>
                                         </label>
                                         <label class="radio-label">
-                                            <input type="radio" name="Status" value="Completed" @(o.Status == "Completed" ? "checked" : "") required />
+                                            <input type="radio" name="status" value="Completed" @(o.Status == "Completed" ? "checked" : "") required />
                                             <span class="radio-text">Completed</span>
                                         </label>
                                         <label class="radio-label">
-                                            <input type="radio" name="Status" value="Cancelled" @(o.Status == "Cancelled" ? "checked" : "") required />
+                                            <input type="radio" name="status" value="Cancelled" @(o.Status == "Cancelled" ? "checked" : "") required />
                                             <span class="radio-text">Cancelled</span>
                                         </label>
                                     </div>
-                                    <span class="error-message" data-valmsg-for="Status"></span>
+                                    <span class="error-message" data-valmsg-for="status"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Active</label>
+                                    <div class="status-radio-group">
+                                        <label class="radio-label">
+                                            <input type="radio" name="isActive" value="true" @(o.IsActive ? "checked" : "") />
+                                            <span class="radio-text">Active</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="isActive" value="false" @(!o.IsActive ? "checked" : "") />
+                                            <span class="radio-text">Inactive</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -166,8 +184,8 @@
                     else
                     {
                         <!-- Display Order Details -->
-                        <p><strong>Customer ID:</strong> <span>@o.CustomerId</span></p>
-                        <p><strong>Inventory ID:</strong> <span>@o.StationCarId</span></p>
+                        <p><strong>Customer:</strong> <span>@o.CustomerName</span></p>
+                        <p><strong>Staff:</strong> <span>@o.StaffName</span></p>
                         <p><strong>Order Date:</strong> <span>@o.OrderDate.ToString("dd/MM/yyyy HH:mm")</span></p>
                         <p class="price"><strong>Total Price:</strong> <span>@o.TotalPrice.ToString("C")</span></p>
                         <p><strong>Status:</strong> <span>@o.Status</span></p>

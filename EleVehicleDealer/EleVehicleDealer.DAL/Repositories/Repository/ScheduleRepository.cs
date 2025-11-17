@@ -1,24 +1,18 @@
-﻿using EleVehicleDealer.DAL.DBContext;
-using EleVehicleDealer.Domain.EntityModels;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using EleVehicleDealer.DAL.DBContext;
+using EleVehicleDealer.DAL.Models;
 using EleVehicleDealer.DAL.Repositories.Base;
 using EleVehicleDealer.DAL.Repositories.IRepository;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EleVehicleDealer.DAL.Repositories.Repository
 {
     public class ScheduleRepository : GenericRepository<Schedule>, IScheduleRepository
     {
-
-        private readonly EvdmsDatabaseContext _context;
-
-        public ScheduleRepository(EvdmsDatabaseContext context) 
+        public ScheduleRepository(EvdmsDatabaseContext context) : base(context ?? throw new ArgumentNullException(nameof(context)))
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
         public async Task<Schedule> CreateScheduleAsync(Schedule schedule)
         {
@@ -55,20 +49,56 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
             }
         }
 
-        public async Task<IEnumerable<Schedule>> GetAllAsync()
+        public async Task<IEnumerable<Schedule>> GetAllSchedulesAsync()
         {
-            return await _context.Schedules.ToListAsync();
+            return await _context.Schedules
+                .Include(s => s.Customer)
+                .Include(s => s.StationCar)
+                    .ThenInclude(sc => sc.Vehicle)
+                .Where(s => s.IsActive)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public async Task UpdateAsync(Schedule schedule)
+        public async Task<IEnumerable<Schedule>> GetByCustomerIdAsync(int customerId)
         {
+            return await _context.Schedules
+                .Where(s => s.CustomerId == customerId && s.IsActive)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Schedule>> GetByStationAsync(int stationId)
+        {
+            return await _context.Schedules
+                .Where(s => s.IsActive &&
+                            s.StationCar != null &&
+                            s.StationCar.StationId == stationId)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Schedule>> GetUpcomingSchedulesAsync(DateTime startDate)
+        {
+            return await _context.Schedules
+                .Where(s => s.IsActive && s.ScheduleTime >= startDate)
+                .OrderBy(s => s.ScheduleTime)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task UpdateScheduleAsync(Schedule schedule)
+        {
+            if (schedule == null)
+                throw new ArgumentNullException(nameof(schedule));
+
             _context.Schedules.Update(schedule);
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteScheduleAsync(int id)
         {
-            var schedule = await GetByIdAsync(id);
+            var schedule = await _context.Schedules.FirstOrDefaultAsync(s => s.ScheduleId == id);
             if (schedule != null)
             {
                 _context.Schedules.Remove(schedule);
@@ -78,7 +108,7 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
 
         public async Task UpdateStatusAsync(int id, string status)
         {
-            var schedule = await GetByIdAsync(id);
+            var schedule = await _context.Schedules.FirstOrDefaultAsync(s => s.ScheduleId == id);
             if (schedule != null)
             {
                 schedule.Status = status;

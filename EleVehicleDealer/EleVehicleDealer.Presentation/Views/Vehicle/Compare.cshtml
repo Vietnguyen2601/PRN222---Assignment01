@@ -3,7 +3,7 @@
     ViewData["Title"] = "Compare Vehicles";
 }
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@model List<EleVehicleDealer.Domain.EntityModels.Vehicle>
+@model List<EleVehicleDealer.Domain.DTOs.Vehicles.VehicleDetailDto>
 
 <div class="card shadow-sm">
     <div class="card-header bg-primary text-white">
@@ -51,31 +51,31 @@
                         }
                     </tr>
                     <tr>
-                        <td><strong>Created At</strong></td>
+                        <td><strong>Manufacturer</strong></td>
                         @foreach (var v in Model)
                         {
-                            <td>@v.CreatedAt.ToString("dd/MM/yyyy")</td>
+                            <td>@v.Manufacturer</td>
                         }
                     </tr>
                     <tr>
-                        <td><strong>Updated At</strong></td>
+                        <td><strong>Battery Capacity</strong></td>
                         @foreach (var v in Model)
                         {
-                            <td>@(v.UpdatedAt?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>@(v.BatteryCapacity?.ToString() ?? "N/A")</td>
                         }
                     </tr>
                     <tr>
-                        <td><strong>Is Active</strong></td>
+                        <td><strong>Range</strong></td>
                         @foreach (var v in Model)
                         {
-                            <td>@v.IsActive</td>
+                            <td>@(v.Range?.ToString() ?? "N/A")</td>
                         }
                     </tr>
                     <tr>
-                        <td><strong>Station</strong></td>
+                        <td><strong>Active</strong></td>
                         @foreach (var v in Model)
                         {
-                            <td>@(v.StationCars.FirstOrDefault()?.StationId.ToString() ?? "N/A")</td>
+                            <td>@(v.IsActive ? "Yes" : "No")</td>
                         }
                     </tr>
                 </tbody>

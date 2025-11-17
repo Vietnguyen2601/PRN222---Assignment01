@@ -3,9 +3,9 @@
     ViewData["Title"] = "Vehicle Management";
 }
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Vehicle>
+@model IEnumerable<EleVehicleDealer.Domain.DTOs.Vehicles.VehicleCatalogDto>
 @{
-    var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.Domain.EntityModels.Vehicle;
+    var editVehicle = ViewBag.EditVehicle as EleVehicleDealer.Domain.DTOs.Vehicles.VehicleDetailDto;
     var message = TempData["Message"] as string;
     var error = TempData["Error"] as string;
 }
@@ -43,37 +43,50 @@
                 <input type="hidden" name="VehicleId" value="@editVehicle.VehicleId" />
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Model" class="form-label">Model</label>
-                        <input asp-for="@editVehicle.Model" class="form-control" name="Model" required />
-                        <span asp-validation-for="@editVehicle.Model" class="text-danger"></span>
+                        <label class="form-label">Model</label>
+                        <input class="form-control" name="Model" value="@editVehicle.Model" required />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Type" class="form-label">Type</label>
-                        <input asp-for="@editVehicle.Type" class="form-control" name="Type" required />
-                        <span asp-validation-for="@editVehicle.Type" class="text-danger"></span>
+                        <label class="form-label">Type</label>
+                        <input class="form-control" name="Type" value="@editVehicle.Type" required />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Color" class="form-label">Color</label>
-                        <input asp-for="@editVehicle.Color" class="form-control" name="Color" />
-                        <span asp-validation-for="@editVehicle.Color" class="text-danger"></span>
+                        <label class="form-label">Color</label>
+                        <input class="form-control" name="Color" value="@editVehicle.Color" />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.Price" class="form-label">Price</label>
-                        <input asp-for="@editVehicle.Price" class="form-control" name="Price" step="0.01" required />
-                        <span asp-validation-for="@editVehicle.Price" class="text-danger"></span>
+                        <label class="form-label">Price</label>
+                        <input class="form-control" name="Price" step="0.01" value="@editVehicle.Price" required />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@editVehicle.IsActive" class="form-label">Trạng thái</label>
-                        <input asp-for="@editVehicle.IsActive" type="checkbox" name="IsActive" />
-                        <span asp-validation-for="@editVehicle.IsActive" class="text-danger"></span>
+                        <label class="form-label">Manufacturer</label>
+                        <input class="form-control" name="Manufacturer" value="@editVehicle.Manufacturer" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Battery Capacity</label>
+                        <input class="form-control" name="BatteryCapacity" type="number" value="@editVehicle.BatteryCapacity" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Range</label>
+                        <input class="form-control" name="Range" type="number" value="@editVehicle.Range" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Active</label>
+                        <input type="checkbox" name="IsActive" value="true" @(editVehicle.IsActive ? "checked" : string.Empty) />
                     </div>
                 </div>
                 <div class="col-12">
@@ -92,40 +105,46 @@ else
         </div>
         <div class="card-body">
             <form asp-controller="Vehicle" asp-action="Create" method="post" class="row g-3" asp-antiforgery="true">
-                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@Model.First().Model" class="form-label">Model</label>
-                        <input asp-for="@Model.First().Model" class="form-control" required />
-                        <span asp-validation-for="@Model.First().Model" class="text-danger"></span>
+                        <label class="form-label">Model</label>
+                        <input class="form-control" name="Model" required />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@Model.First().Type" class="form-label">Loại</label>
-                        <input asp-for="@Model.First().Type" class="form-control" required />
-                        <span asp-validation-for="@Model.First().Type" class="text-danger"></span>
+                        <label class="form-label">Type</label>
+                        <input class="form-control" name="Type" required />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@Model.First().Color" class="form-label">Màu sắc</label>
-                        <input asp-for="@Model.First().Color" class="form-control" />
-                        <span asp-validation-for="@Model.First().Color" class="text-danger"></span>
+                        <label class="form-label">Color</label>
+                        <input class="form-control" name="Color" />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@Model.First().Price" class="form-label">Giá</label>
-                        <input asp-for="@Model.First().Price" class="form-control" step="0.01" required />
-                        <span asp-validation-for="@Model.First().Price" class="text-danger"></span>
+                        <label class="form-label">Price</label>
+                        <input class="form-control" name="Price" step="0.01" required />
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label asp-for="@Model.First().IsActive" class="form-label">Trạng thái</label>
-                        <input asp-for="@Model.First().IsActive" type="checkbox" class="form-check-input" checked />
-                        <span asp-validation-for="@Model.First().IsActive" class="text-danger"></span>
+                        <label class="form-label">Manufacturer</label>
+                        <input class="form-control" name="Manufacturer" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Battery Capacity</label>
+                        <input class="form-control" name="BatteryCapacity" type="number" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Range</label>
+                        <input class="form-control" name="Range" type="number" />
                     </div>
                 </div>
                 <div class="col-12">
@@ -151,7 +170,7 @@ else
                         <th>Type</th>
                         <th>Color</th>
                         <th>Price</th>
-                        <th>Station</th>
+                        <th>Manufacturer</th>
                         <th>Active</th>
                         <th>Actions</th>
                     </tr>
@@ -166,10 +185,8 @@ else
                             <td>@v.Model</td>
                             <td>@v.Type</td>
                             <td>@v.Color</td>
-                            <td>$@v.Price.ToString("C")</td>
-                            <td>
-                                @(v.StationCars.FirstOrDefault()?.Station?.StationName ?? "N/A")
-                            </td>
+                            <td>$@v.Price.ToString("N2")</td>
+                            <td>@v.Manufacturer</td>
                             <td>
                                 @if (v.IsActive)
                                 {

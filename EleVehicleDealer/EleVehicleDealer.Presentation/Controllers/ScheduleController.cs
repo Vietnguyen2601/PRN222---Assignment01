@@ -1,9 +1,8 @@
-﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.Domain.EntityModels;
+﻿using System;
+using System.Threading.Tasks;
+using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.Domain.DTOs.Schedules;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace EleVehicleDealer.Presentation.Controllers
 {
@@ -28,20 +27,15 @@ namespace EleVehicleDealer.Presentation.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Schedule schedule)
+        public async Task<IActionResult> Create(ScheduleCreateDto schedule)
         {
             try
             {
-                // Set audit fields
-                schedule.CreatedAt = DateTime.Now;
-                schedule.UpdatedAt = DateTime.Now;
-
-                // Log giá trị truyền vào
                 _logger.LogInformation("Creating schedule with CustomerId: {CustomerId}, StationCarId: {StationCarId}, Status: {Status}, ScheduleTime: {ScheduleTime}, IsActive: {IsActive}",
-                    schedule.CustomerId, schedule.StationCarId, schedule.Status, schedule.ScheduleTime, schedule.IsActive);
+                    schedule.CustomerId, schedule.StationCarId, schedule.Status, schedule.ScheduleTime, true);
 
                 await _scheduleService.CreateScheduleAsync(schedule);
-                _logger.LogInformation("Schedule created successfully with ID: {ScheduleId}", schedule.ScheduleId);
+                _logger.LogInformation("Schedule created successfully for CustomerId: {CustomerId}", schedule.CustomerId);
                 TempData["Message"] = "Tạo lịch trình thành công!";
                 var updatedSchedules = await _scheduleService.GetAllSchedulesAsync();
                 return View("Schedule", updatedSchedules);
@@ -81,4 +75,3 @@ namespace EleVehicleDealer.Presentation.Controllers
 
     }
 }
-

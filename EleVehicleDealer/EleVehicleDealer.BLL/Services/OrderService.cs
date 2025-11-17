@@ -1,92 +1,111 @@
-﻿using EleVehicleDealer.BLL.Interfaces;
-using EleVehicleDealer.DAL.DBContext;
-using EleVehicleDealer.Domain.EntityModels;
-using EleVehicleDealer.DAL.Repositories.IRepository;
-using EleVehicleDealer.DAL.Repositories.Repository;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using EleVehicleDealer.BLL.Interfaces;
+using EleVehicleDealer.DAL.DBContext;
+using EleVehicleDealer.DAL.Models;
+using EleVehicleDealer.DAL.Repositories.IRepository;
+using EleVehicleDealer.Domain.DTOs.Orders;
+using EleVehicleDealer.BLL.Mappers;
 
 namespace EleVehicleDealer.BLL.Services
 {
     public class OrderService : IOrderService
     {
         private readonly IOrderRepository _orderRepository;
-        private readonly IVehicleRepository _vehicleRepository;
-        private readonly EvdmsDatabaseContext _context = new EvdmsDatabaseContext();
+        private readonly EvdmsDatabaseContext _context;
 
-        public OrderService(IOrderRepository orderRepository, IVehicleRepository vehicleRepository, EvdmsDatabaseContext context)
+        public OrderService(IOrderRepository orderRepository, EvdmsDatabaseContext context)
         {
             _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
-            _vehicleRepository = vehicleRepository ?? throw new ArgumentNullException(nameof(vehicleRepository));
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<Order> CreateOrderAsync(Order order)
+        public async Task<OrderDetailDto?> CreateOrderAsync(OrderCreateDto dto)
         {
-            if (order == null)
-                throw new ArgumentNullException(nameof(order));
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
 
-            // Validate CustomerId
-            if (!_context.Accounts.Any(a => a.AccountId == order.CustomerId))
+            if (!_context.Accounts.Any(a => a.AccountId == dto.CustomerId))
                 throw new ArgumentException("Invalid CustomerId.");
 
-            // Validate StationCarId
-            if (!_context.StationCars.Any(sc => sc.StationCarId == order.StationCarId))
-                throw new ArgumentException("Invalid StationCarId.");
-
-            // Validate PromotionId (if provided)
-            if (order.PromotionId.HasValue && !_context.Promotions.Any(p => p.PromotionId == order.PromotionId))
-                throw new ArgumentException("Invalid PromotionId.");
+            if (!_context.Accounts.Any(a => a.AccountId == dto.StaffId))
+                throw new ArgumentException("Invalid StaffId.");
 
             // Validate Status
-            if (string.IsNullOrEmpty(order.Status))
+            if (string.IsNullOrEmpty(dto.Status))
                 throw new ArgumentException("Status is required.");
 
-            // Set default values
-            order.OrderDate = DateTime.Now;
-            order.CreatedAt = DateTime.Now;
-            order.UpdatedAt = DateTime.Now;
+            if (dto.Items == null || !dto.Items.Any())
+                throw new ArgumentException("Order must include at least one item.");
 
-            // Call repository to save the order
-            return await _orderRepository.CreateOrderAsync(order);
+            foreach (var item in dto.Items)
+            {
+                if (!_context.StationCars.Any(sc => sc.StationCarId == item.StationCarId))
+                    throw new ArgumentException($"Invalid StationCarId {item.StationCarId}.");
+            }
+
+            var order = new Order
+            {
+                CustomerId = dto.CustomerId,
+                StaffId = dto.StaffId,
+                Status = dto.Status,
+                OrderDate = DateTime.Now,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+                IsActive = true
+            };
+
+            foreach (var item in dto.Items)
+            {
+                order.OrderItems.Add(new OrderItem
+                {
+                    StationCarId = item.StationCarId,
+                    Quantity = item.Quantity,
+                    Price = item.Price,
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                });
+            }
+
+            order.TotalPrice = order.OrderItems.Sum(i => i.Price * i.Quantity);
+
+            var created = await _orderRepository.CreateOrderAsync(order);
+            var detailed = await _orderRepository.GetOrderWithDetailsAsync(created.OrderId);
+            return detailed.ToOrderDetailDto();
         }
 
-        public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+        public async Task<IEnumerable<OrderSummaryDto>> GetAllOrdersAsync()
         {
-            return await _orderRepository.GetAllOrdersAsync();
+            var orders = await _orderRepository.GetOrdersWithDetailsAsync();
+            return orders.ToOrderSummaryDtos();
         }
 
-        public async Task<Order> GetOrderByIdAsync(int orderId)
+        public async Task<OrderDetailDto?> GetOrderByIdAsync(int orderId)
         {
             if (orderId <= 0)
                 throw new ArgumentException("Order ID must be greater than zero.", nameof(orderId));
 
-            var order = await _orderRepository.GetOrderByIdAsync(orderId);
-            if (order == null)
-                throw new KeyNotFoundException($"Order with ID {orderId} was not found.");
-
-            return order;
+            var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            return order.ToOrderDetailDto();
         }
 
-        public async Task UpdateOrderAsync(Order order)
+        public async Task<OrderDetailDto?> UpdateOrderAsync(OrderUpdateDto dto)
         {
-            if (order == null)
-                throw new ArgumentNullException(nameof(order));
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
 
-            // Validate if the order exists in the database
-            var existingOrder = await _orderRepository.GetOrderByIdAsync(order.OrderId);
+            var existingOrder = await _orderRepository.GetOrderByIdAsync(dto.OrderId);
             if (existingOrder == null)
-                throw new ArgumentException($"Order with ID {order.OrderId} does not exist.");
+                throw new ArgumentException($"Order with ID {dto.OrderId} does not exist.");
 
-            // Update the status and timestamps
-            existingOrder.Status = order.Status;
+            existingOrder.Status = dto.Status;
             existingOrder.UpdatedAt = DateTime.Now;
 
-            // Save changes to the database
             await _orderRepository.UpdateOrderAsync(existingOrder);
+            var reloaded = await _orderRepository.GetOrderWithDetailsAsync(dto.OrderId);
+            return reloaded.ToOrderDetailDto();
         }
     }
 }

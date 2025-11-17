@@ -1,6 +1,4 @@
-﻿```cshtml
-@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Schedule>
-@using EleVehicleDealer.Domain.EntityModels
+﻿@model IEnumerable<EleVehicleDealer.Domain.DTOs.Schedules.ScheduleDto>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <div class="main-container">
@@ -113,12 +111,11 @@
                 <div class="schedule-card">
                     <div class="schedule-card-content">
                         <h5>Schedule #@schedule.ScheduleId</h5>
-                        <p><strong>Customer ID:</strong> @schedule.CustomerId</p>
-                        <p><strong>Station Car ID:</strong> @schedule.StationCarId</p>
+                        <p><strong>Customer:</strong> @schedule.CustomerName (@schedule.CustomerId)</p>
+                        <p><strong>Vehicle:</strong> @schedule.VehicleModel</p>
+                        <p><strong>Station:</strong> @schedule.StationName</p>
                         <p><strong>Status:</strong> @schedule.Status</p>
                         <p><strong>Schedule Time:</strong> @schedule.ScheduleTime.ToString("dd/MM/yyyy HH:mm")</p>
-                        <p><strong>Created At:</strong> @schedule.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-                        <p><strong>Updated At:</strong> @(schedule.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</p>
                         <p><strong>Is Active:</strong> @(schedule.IsActive ? "Yes" : "No")</p>
                         <form asp-action="UpdateStatus" method="post" style="margin-top: 10px;">
                             <input type="hidden" name="id" value="@schedule.ScheduleId" />

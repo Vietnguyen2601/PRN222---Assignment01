@@ -1,6 +1,7 @@
-﻿using EleVehicleDealer.Domain.EntityModels;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using EleVehicleDealer.DAL.Models;
 using EleVehicleDealer.DAL.Repositories.Base;
-
 
 namespace EleVehicleDealer.DAL.Repositories.IRepository
 {
@@ -8,11 +9,12 @@ namespace EleVehicleDealer.DAL.Repositories.IRepository
     {
         Task<Vehicle> CreateVehicleAsync(Vehicle vehicle);
         Task<IEnumerable<Vehicle>> GetAllVehicleAsync();
+        Task<IEnumerable<Vehicle>> GetActiveCatalogAsync();
         Task<IEnumerable<Vehicle>> GetVehiclesByTypeAsync(string type);
-        Task<IEnumerable<Vehicle>> GetAvailableVehiclesAsync();
+        Task<IEnumerable<Vehicle>> GetVehiclesByManufacturerAsync(string manufacturer);
         Task<IEnumerable<Vehicle>> SearchVehiclesAsync(string searchTerm);
-        Task<bool> UpdateStockAvailabilityAsync(int vehicleId, int quantity);
         Task<IEnumerable<Vehicle>> GetVehiclesByPriceRangeAsync(decimal minPrice, decimal maxPrice);
+        Task<IEnumerable<Vehicle>> GetVehiclesByIdsAsync(IEnumerable<int> vehicleIds);
         Task<bool> DeleteByIdAsync(int id);
         Task<IEnumerable<Vehicle>> GetVehiclesByStationAsync(int stationId);
         Task<int> GetTotalStockAsync();

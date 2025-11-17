@@ -1,6 +1,5 @@
 ﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@using EleVehicleDealer.Domain.EntityModels
-@model IEnumerable<EleVehicleDealer.Domain.EntityModels.Vehicle>
+@model IEnumerable<EleVehicleDealer.Domain.DTOs.Vehicles.VehicleCatalogDto>
 @{
     var username = Context.Session?.GetString("Username") ?? string.Empty;
     var isLoggedIn = !string.IsNullOrEmpty(username);

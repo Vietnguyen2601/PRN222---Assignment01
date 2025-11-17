@@ -17,5 +17,8 @@ namespace EleVehicleDealer.Presentation.Modal
         public int StaffId { get; set; }
 
         public int? PromotionId { get; set; }
+
+        [Range(1, int.MaxValue)]
+        public int Quantity { get; set; } = 1;
     }
 }

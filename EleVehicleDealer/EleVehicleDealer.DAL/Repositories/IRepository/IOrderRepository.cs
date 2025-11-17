@@ -1,25 +1,21 @@
-﻿using EleVehicleDealer.Domain.EntityModels;
-using EleVehicleDealer.DAL.Repositories.Base;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using EleVehicleDealer.DAL.Models;
+using EleVehicleDealer.DAL.Repositories.Base;
 
 namespace EleVehicleDealer.DAL.Repositories.IRepository
 {
     public interface IOrderRepository : IGenericRepository<Order>
     {
-
-        Task<Order> GetOrderByIdAsync(int id);
-        Task<Order> CreateOrderAsync(Order order);
+        Task<Order?> GetOrderByIdAsync(int id);
+        Task<Order?> GetOrderWithDetailsAsync(int id);
         Task<IEnumerable<Order>> GetAllOrdersAsync();
+        Task<IEnumerable<Order>> GetOrdersWithDetailsAsync();
+        Task<IEnumerable<Order>> GetOrdersByStaffAsync(int staffId);
+        Task<IEnumerable<Order>> GetOrdersByCustomerAsync(int customerId);
+        Task<IEnumerable<Order>> GetOrdersByStatusAsync(string status);
+        Task<Order> CreateOrderAsync(Order order);
         Task UpdateOrderAsync(Order order);
-
-        //lấy order theo account id
-
-        //lấy order theo stationId 
-
-
+        Task<bool> SoftDeleteAsync(int id);
     }
 }

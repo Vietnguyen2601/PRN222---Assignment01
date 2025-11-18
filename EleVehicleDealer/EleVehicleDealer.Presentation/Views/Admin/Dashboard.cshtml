@@ -1,0 +1,868 @@
+@model EleVehicleDealer.Domain.DTOs.Dashboard.DashboardDto
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    var selectedYear = ViewBag.SelectedYear ?? DateTime.Now.Year;
+    var years = ViewBag.Years as List<int> ?? new List<int>();
+}
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="header-left">
+            <a asp-controller="Home" asp-action="Manage" class="btn-back-manage">
+                <i class="fas fa-arrow-left"></i> Back to Manage
+            </a>
+            <h1><i class="fas fa-chart-line"></i> Admin Dashboard</h1>
+        </div>
+        <div class="year-selector">
+            <label>Select Year:</label>
+            <select id="yearSelect" onchange="changeYear(this.value)">
+                @foreach (var year in years)
+                {
+                    <option value="@year" selected="@(year == selectedYear)">@year</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="summary-card revenue">
+            <div class="card-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="card-content">
+                <h3>Total Revenue</h3>
+                <p class="amount">@Model.TotalRevenue.ToString("C")</p>
+            </div>
+        </div>
+
+        <div class="summary-card orders">
+            <div class="card-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="card-content">
+                <h3>Total Orders</h3>
+                <p class="amount">@Model.TotalOrders</p>
+            </div>
+        </div>
+
+        <div class="summary-card customers">
+            <div class="card-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="card-content">
+                <h3>Total Customers</h3>
+                <p class="amount">@Model.TotalCustomers</p>
+            </div>
+        </div>
+
+        <div class="summary-card vehicles">
+            <div class="card-icon">
+                <i class="fas fa-car"></i>
+            </div>
+            <div class="card-content">
+                <h3>Total Vehicles</h3>
+                <p class="amount">@Model.TotalVehicles</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <!-- Revenue by Quarter -->
+        <div class="chart-card">
+            <h3><i class="fas fa-calendar-alt"></i> Revenue by Quarter (@selectedYear)</h3>
+            <canvas id="quarterChart"></canvas>
+        </div>
+
+        <!-- Revenue by Month -->
+        <div class="chart-card">
+            <h3><i class="fas fa-calendar"></i> Revenue by Month (@selectedYear)</h3>
+            <canvas id="monthChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Custom Date Range -->
+    <div class="chart-card full-width">
+        <h3><i class="fas fa-calendar-week"></i> Custom Date Range Analysis</h3>
+        <div class="date-range-selector">
+            <div class="form-group">
+                <label>Start Date:</label>
+                <input type="date" id="startDate" class="form-input" />
+            </div>
+            <div class="form-group">
+                <label>End Date:</label>
+                <input type="date" id="endDate" class="form-input" />
+            </div>
+            <button onclick="loadCustomDateRange()" class="btn-load">
+                <i class="fas fa-search"></i> Load Data
+            </button>
+        </div>
+        <div id="customRangeResult" style="display: none;">
+            <div class="custom-range-summary">
+                <div class="summary-item">
+                    <span class="label">Total Revenue:</span>
+                    <span class="value" id="customRevenue">$0.00</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">Total Orders:</span>
+                    <span class="value" id="customOrders">0</span>
+                </div>
+            </div>
+            <canvas id="customRangeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Station Comparison -->
+    <div class="chart-card full-width">
+        <h3><i class="fas fa-building"></i> Station Revenue Comparison</h3>
+        <div class="date-range-selector">
+            <div class="form-group">
+                <label>From:</label>
+                <input type="date" id="stationStartDate" class="form-input" />
+            </div>
+            <div class="form-group">
+                <label>To:</label>
+                <input type="date" id="stationEndDate" class="form-input" />
+            </div>
+            <button onclick="loadStationComparison()" class="btn-load">
+                <i class="fas fa-sync"></i> Update
+            </button>
+        </div>
+        <canvas id="stationChart"></canvas>
+        
+        <div class="station-table">
+            <table id="stationTable">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Station Name</th>
+                        <th>Revenue</th>
+                        <th>Orders</th>
+                        <th>Vehicles Sold</th>
+                        <th>Avg Order Value</th>
+                    </tr>
+                </thead>
+                <tbody id="stationTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
+        --secondary-gradient: linear-gradient(135deg, #28a745, #20c997);
+        --danger-gradient: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        --warning-gradient: linear-gradient(135deg, #f093fb, #f5576c);
+        --info-gradient: linear-gradient(135deg, #4facfe, #00f2fe);
+        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-container {
+        max-width: 1600px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .btn-back-manage {
+        background: white;
+        color: #667eea;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-light);
+        border: 2px solid #667eea;
+    }
+
+        .btn-back-manage:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-back-manage i {
+            font-size: 14px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 0;
+        }
+
+            .dashboard-header h1 i {
+                background: var(--primary-gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+    .year-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .year-selector label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .year-selector select {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: var(--shadow-light);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .summary-card.revenue::before {
+            background: var(--secondary-gradient);
+        }
+
+        .summary-card.orders::before {
+            background: var(--primary-gradient);
+        }
+
+        .summary-card.customers::before {
+            background: var(--warning-gradient);
+        }
+
+        .summary-card.vehicles::before {
+            background: var(--info-gradient);
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+    .card-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+
+    .summary-card.revenue .card-icon {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+        color: #28a745;
+    }
+
+    .summary-card.orders .card-icon {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        color: #667eea;
+    }
+
+    .summary-card.customers .card-icon {
+        background: linear-gradient(135deg, rgba(240, 147, 251, 0.1), rgba(245, 87, 108, 0.1));
+        color: #f093fb;
+    }
+
+    .summary-card.vehicles .card-icon {
+        background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1));
+        color: #4facfe;
+    }
+
+    .card-content h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .card-content .amount {
+        margin: 10px 0 0 0;
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #2c3e50;
+    }
+
+    .charts-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: var(--shadow-light);
+    }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-card h3 {
+            margin: 0 0 25px 0;
+            font-size: 1.3rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .chart-card h3 i {
+                color: #667eea;
+            }
+
+    .date-range-selector {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        align-items: flex-end;
+    }
+
+    .form-group {
+        flex: 1;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+    }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+    .btn-load {
+        padding: 12px 25px;
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .btn-load:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+    .custom-range-summary {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 25px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+    }
+
+    .summary-item {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .summary-item .label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+
+        .summary-item .value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #28a745;
+        }
+
+    .station-table {
+        margin-top: 30px;
+        overflow-x: auto;
+    }
+
+        .station-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .station-table table thead {
+                background: var(--primary-gradient);
+                color: white;
+            }
+
+                .station-table table thead th {
+                    padding: 15px;
+                    text-align: left;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    font-size: 13px;
+                    letter-spacing: 0.5px;
+                }
+
+            .station-table table tbody tr {
+                border-bottom: 1px solid #f8f9fa;
+                transition: all 0.3s ease;
+            }
+
+                .station-table table tbody tr:hover {
+                    background: #f8f9fa;
+                }
+
+                .station-table table tbody tr td {
+                    padding: 15px;
+                }
+
+                    .station-table table tbody tr td:first-child {
+                        font-weight: 800;
+                        color: #667eea;
+                        font-size: 1.2rem;
+                    }
+
+    @@media (max-width: 1200px) {
+        .summary-cards {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .summary-cards {
+            grid-template-columns: 1fr;
+        }
+
+        .date-range-selector {
+            flex-direction: column;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Debug: Log data ?? ki?m tra
+    console.log('Quarter Data:', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByQuarter)));
+    console.log('Month Data:', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth)));
+    console.log('Station Data:', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByStation)));
+
+    // Chart colors v?i opacity phù h?p
+    const chartColors = {
+        primary: 'rgba(102, 126, 234, 0.8)',
+        primaryFill: 'rgba(102, 126, 234, 0.2)',
+        secondary: 'rgba(40, 167, 69, 0.8)',
+        secondaryFill: 'rgba(40, 167, 69, 0.2)',
+        danger: 'rgba(255, 107, 107, 0.8)',
+        warning: 'rgba(240, 147, 251, 0.8)',
+        info: 'rgba(79, 172, 254, 0.8)',
+        infoFill: 'rgba(79, 172, 254, 0.2)'
+    };
+
+    // Quarter Chart - S? d?ng property names v?i ch? hoa
+    const quarterData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByQuarter));
+    const quarterCtx = document.getElementById('quarterChart').getContext('2d');
+    
+    console.log('Creating Quarter Chart with data:', quarterData);
+    
+    const quarterChart = new Chart(quarterCtx, {
+        type: 'bar',
+        data: {
+            labels: quarterData.map(d => d.Period || d.period), // Support both cases
+            datasets: [{
+                label: 'Revenue',
+                data: quarterData.map(d => d.Revenue || d.revenue),
+                backgroundColor: chartColors.primary,
+                borderRadius: 10,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend:
+                {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Revenue: $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Month Chart
+    const monthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth));
+    const monthCtx = document.getElementById('monthChart').getContext('2d');
+    
+    console.log('Creating Month Chart with data:', monthData);
+    
+    const monthChart = new Chart(monthCtx, {
+        type: 'line',
+        data: {
+            labels: monthData.map(d => d.Period || d.period),
+            datasets: [{
+                label: 'Revenue',
+                data: monthData.map(d => d.Revenue || d.revenue),
+                borderColor: chartColors.secondary,
+                backgroundColor: chartColors.secondaryFill,
+                tension: 0.4,
+                fill: true,
+                borderWidth: 3,
+                pointBackgroundColor: chartColors.secondary,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Revenue: $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Station Chart
+    const stationData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByStation));
+    const stationCtx = document.getElementById('stationChart').getContext('2d');
+    
+    console.log('Creating Station Chart with data:', stationData);
+    
+    let stationChart = new Chart(stationCtx, {
+        type: 'bar',
+        data: {
+            labels: stationData.map(d => d.StationName || d.stationName),
+            datasets: [{
+                label: 'Revenue',
+                data: stationData.map(d => d.Revenue || d.revenue),
+                backgroundColor: [
+                    chartColors.primary,
+                    chartColors.secondary,
+                    chartColors.warning,
+                    chartColors.info,
+                    chartColors.danger
+                ],
+                borderRadius: 10,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Revenue: $' + context.parsed.x.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Update station table
+    function updateStationTable(data) {
+        const tbody = document.getElementById('stationTableBody');
+        tbody.innerHTML = '';
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No data available</td></tr>';
+            return;
+        }
+        
+        data.forEach((station, index) => {
+            const stationName = station.StationName || station.stationName || 'Unknown';
+            const revenue = station.Revenue || station.revenue || 0;
+            const orderCount = station.OrderCount || station.orderCount || 0;
+            const vehiclesSold = station.VehiclesSold || station.vehiclesSold || 0;
+            const avgOrderValue = orderCount > 0 ? revenue / orderCount : 0;
+            
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${stationName}</td>
+                    <td>$${revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td>${orderCount}</td>
+                    <td>${vehiclesSold}</td>
+                    <td>$${avgOrderValue.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    updateStationTable(stationData);
+
+    function changeYear(year) {
+        window.location.href = '/Admin/Dashboard?year=' + year;
+    }
+
+    async function loadCustomDateRange() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+
+        try {
+            const response = await fetch('/Admin/GetCustomDateRangeRevenue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ startDate, endDate })
+            });
+
+            const result = await response.json();
+            console.log('Custom date range result:', result);
+            
+            if (result.success) {
+                const data = result.data;
+                
+                document.getElementById('customRangeResult').style.display = 'block';
+                
+                // Support both PascalCase and camelCase
+                const totalRevenue = data.totalRevenue || data.TotalRevenue || 0;
+                const totalOrders = data.totalOrders || data.TotalOrders || 0;
+                const dailyRevenue = data.dailyRevenue || data.DailyRevenue || [];
+                
+                document.getElementById('customRevenue').textContent = '$' + totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('customOrders').textContent = totalOrders;
+
+                // Update custom range chart
+                const customCtx = document.getElementById('customRangeChart').getContext('2d');
+                if (window.customRangeChart) {
+                    window.customRangeChart.destroy();
+                }
+                
+                window.customRangeChart = new Chart(customCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dailyRevenue.map(d => d.Period || d.period),
+                        datasets: [{
+                            label: 'Daily Revenue',
+                            data: dailyRevenue.map(d => d.Revenue || d.revenue),
+                            borderColor: chartColors.info,
+                            backgroundColor: chartColors.infoFill,
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3,
+                            pointBackgroundColor: chartColors.info,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Revenue: $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Chart created successfully with', dailyRevenue.length, 'data points');
+            } else {
+                alert('Failed to load data: ' + (result.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error loading custom date range:', error);
+            
+            // N?u có l?i JSON parse, th? load data t? response text
+            if (error instanceof SyntaxError) {
+                console.log('JSON parse error, trying to reload...');
+                // Không hi?n th? alert error n?a, ch? log
+            } else {
+                // Ch? hi?n th? alert cho l?i th?t s?
+                console.log('Request error:', error.message);
+            }
+        }
+    }
+
+    async function loadStationComparison() {
+        const startDate = document.getElementById('stationStartDate').value;
+        const endDate = document.getElementById('stationEndDate').value;
+
+        try {
+            const response = await fetch('/Admin/GetStationComparison', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ startDate: startDate || null, endDate: endDate || null })
+            });
+
+            const result = await response.json();
+            console.log('Station comparison result:', result);
+            
+            if (result.success) {
+                // Update chart
+                stationChart.data.labels = result.data.map(d => d.StationName || d.stationName);
+                stationChart.data.datasets[0].data = result.data.map(d => d.Revenue || d.revenue);
+                stationChart.update();
+
+                // Update table
+                updateStationTable(result.data);
+            } else {
+                alert('Failed to load data: ' + (result.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error loading station comparison:', error);
+            alert('An error occurred while loading data');
+        }
+    }
+</script>

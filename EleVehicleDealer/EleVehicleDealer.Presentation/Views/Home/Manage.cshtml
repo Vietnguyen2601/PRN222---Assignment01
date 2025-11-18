@@ -28,10 +28,21 @@
 <div class="admin-container">
     <aside class="admin-sidebar">
         <ul class="nav-list">
-            <li><a href="#user-tab" class="nav-link active" onclick="showTab('user-tab')">User Management</a></li>
-            <li><a href="#vehicle-tab" class="nav-link" onclick="showTab('vehicle-tab')">Vehicle Management</a></li>
-            <li><a href="#order-tab" class="nav-link" onclick="showTab('order-tab')">Order Management</a></li>
-            <li><a href="#schedule-tab" class="nav-link" onclick="showTab('schedule-tab')">Test Drive Schedules</a></li>
+            <li><a asp-controller="Admin" asp-action="Dashboard" class="nav-link">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a></li>
+            <li><a href="#user-tab" class="nav-link active" onclick="showTab('user-tab')">
+                <i class="fas fa-users"></i> User Management
+            </a></li>
+            <li><a href="#vehicle-tab" class="nav-link" onclick="showTab('vehicle-tab')">
+                <i class="fas fa-car"></i> Vehicle Management
+            </a></li>
+            <li><a href="#order-tab" class="nav-link" onclick="showTab('order-tab')">
+                <i class="fas fa-shopping-cart"></i> Order Management
+            </a></li>
+            <li><a href="#schedule-tab" class="nav-link" onclick="showTab('schedule-tab')">
+                <i class="fas fa-calendar"></i> Test Drive Schedules
+            </a></li>
         </ul>
     </aside>
 
@@ -222,13 +233,22 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     function showTab(tabId) {
+        // Remove active from all tabs
         var tabs = document.querySelectorAll('.admin-tab');
         tabs.forEach(function(tab) { tab.classList.remove('active'); });
+        
+        // Remove active from all nav links
         var navLinks = document.querySelectorAll('.nav-link');
         navLinks.forEach(function(link) { link.classList.remove('active'); });
 
+        // Add active to selected tab
         document.getElementById(tabId).classList.add('active');
-        event.target.classList.add('active');
+        
+        // Add active to clicked nav link (only for tab links, not Dashboard link)
+        var clickedLink = event.target.closest('.nav-link');
+        if (clickedLink && clickedLink.getAttribute('href').startsWith('#')) {
+            clickedLink.classList.add('active');
+        }
     }
 
     async function updateScheduleStatus(scheduleId, status) {
@@ -418,7 +438,7 @@
     }
 
     .admin-sidebar {
-        width: 180px;
+        width: 220px;
         background: var(--primary-gradient);
         padding: 15px 0;
         margin: 0;
@@ -432,21 +452,29 @@
     }
 
     .nav-link {
-        display: block;
-        padding: 10px 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 15px;
         color: white;
         text-decoration: none;
         font-weight: 600;
-        transition: background 0.3s ease;
+        transition: all 0.3s ease;
         border-left: 3px solid transparent;
         font-size: 14px;
         white-space: nowrap;
     }
 
+        .nav-link i {
+            font-size: 16px;
+            min-width: 20px;
+        }
+
         .nav-link:hover,
         .nav-link.active {
             background: rgba(255, 255, 255, 0.15);
             border-left-color: white;
+            transform: translateX(5px);
         }
 
     .admin-main {

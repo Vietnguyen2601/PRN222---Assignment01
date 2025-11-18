@@ -15,13 +15,17 @@ namespace EleVehicleDealer.Presentation.Controllers
         private readonly ILogger<OrderController> _logger;
         private readonly IStationCarService _stationCarService;
         private readonly IVehicleService _vehicleService;
+        private readonly ICartService _cartService;
+        private readonly IAccountService _accountService;
 
-        public OrderController(IOrderService orderService, ILogger<OrderController> logger, IStationCarService stationCardService, IVehicleService vehicleService)
+        public OrderController(IOrderService orderService, ILogger<OrderController> logger, IStationCarService stationCardService, IVehicleService vehicleService, ICartService cartService, IAccountService accountService)
         {
             _orderService = orderService;
             _logger = logger;
             _stationCarService = stationCardService;
             _vehicleService = vehicleService;
+            _cartService = cartService;
+            _accountService = accountService;
         }
 
         [HttpGet]
@@ -168,6 +172,137 @@ namespace EleVehicleDealer.Presentation.Controllers
                 TempData["Error"] = $"Lỗi khi xóa mềm đơn hàng: {ex.Message}";
                 return RedirectToAction("OrderManager");
             }
+        }
+
+        public async Task<IActionResult> Checkout()
+        {
+            // Kiểm tra đăng nhập
+            var username = HttpContext.Session.GetString("Username");
+            var accountId = HttpContext.Session.GetInt32("AccountId");
+            
+            if (string.IsNullOrEmpty(username) || !accountId.HasValue)
+            {
+                TempData["Error"] = "Please login to checkout.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Lấy cart
+            var cart = await _cartService.GetCartAsync();
+            if (cart.Items.Count == 0)
+            {
+                TempData["Error"] = "Your cart is empty.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            // Lấy thông tin customer từ AccountService
+            var customer = await _accountService.GetByIdAsync(accountId.Value);
+            
+            // Pre-fill checkout form với thông tin customer có sẵn
+            var checkoutDto = new CheckoutDto
+            {
+                CustomerName = customer?.Username ?? username,
+                Email = customer?.Email ?? "",
+                Phone = customer?.ContactNumber ?? "",  // Sử dụng ContactNumber thay vì Phone
+                Address = "",  // Để trống vì AccountDto không có Address
+                City = ""
+            };
+
+            ViewBag.Cart = cart;
+            
+            return View(checkoutDto);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcessCheckout(CheckoutDto checkout)
+        {
+            // Kiểm tra đăng nhập
+            var username = HttpContext.Session.GetString("Username");
+            var accountId = HttpContext.Session.GetInt32("AccountId");
+            
+            if (string.IsNullOrEmpty(username) || !accountId.HasValue)
+            {
+                TempData["Error"] = "Please login to checkout.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var cart = await _cartService.GetCartAsync();
+                ViewBag.Cart = cart;
+                return View("Checkout", checkout);
+            }
+
+            // Lấy cart
+            var cartData = await _cartService.GetCartAsync();
+            if (cartData.Items.Count == 0)
+            {
+                TempData["Error"] = "Your cart is empty.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            // Tạo order items từ cart
+            var orderItems = new List<OrderCreateItemDto>();
+            foreach (var cartItem in cartData.Items)
+            {
+                // Giả sử bạn cần tìm StationCarId dựa trên VehicleId
+                // Bạn có thể cần thêm logic để lấy StationCarId
+                // Tạm thời dùng 1 như default hoặc bỏ qua nếu không bắt buộc
+                orderItems.Add(new OrderCreateItemDto
+                {
+                    StationCarId = 1, // TODO: Lấy StationCarId thực tế
+                    Quantity = cartItem.Quantity,
+                    Price = cartItem.Price
+                });
+            }
+
+            // Tạo order
+            var orderCreateDto = new OrderCreateDto
+            {
+                CustomerId = accountId.Value,
+                StaffId = 1, // TODO: Lấy StaffId nếu cần
+                Status = "Pending",
+                Items = orderItems
+            };
+
+            try
+            {
+                var createdOrder = await _orderService.CreateOrderAsync(orderCreateDto);
+                
+                // Clear cart sau khi đặt hàng thành công
+                await _cartService.ClearCartAsync();
+
+                // Lưu thông tin order vào TempData để hiển thị ở trang Success
+                // Chuyển decimal sang string để TempData có thể serialize
+                TempData["OrderId"] = createdOrder.OrderId;
+                TempData["CustomerName"] = checkout.CustomerName;
+                TempData["TotalAmount"] = cartData.TotalAmount.ToString("F2"); // Chuyển decimal sang string
+                TempData["OrderDate"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+
+                return RedirectToAction("Success");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to create order: {ex.Message}";
+                var cart = await _cartService.GetCartAsync();
+                ViewBag.Cart = cart;
+                return View("Checkout", checkout);
+            }
+        }
+
+        public IActionResult Success()
+        {
+            // Lấy thông tin từ TempData
+            ViewBag.OrderId = TempData["OrderId"];
+            ViewBag.CustomerName = TempData["CustomerName"];
+            
+            // Parse string về decimal
+            var totalAmountStr = TempData["TotalAmount"] as string;
+            ViewBag.TotalAmount = decimal.TryParse(totalAmountStr, out var amount) ? amount : 0m;
+            
+            ViewBag.OrderDate = TempData["OrderDate"];
+
+            return View();
         }
     }
 }

@@ -4,16 +4,17 @@
     var username = Context.Session?.GetString("Username") ?? string.Empty;
     var isLoggedIn = !string.IsNullOrEmpty(username);
     var accountId = Context.Session?.GetInt32("AccountId") ?? 0;
-    var userRole = Context.Session?.GetString("Role") ?? "Customer"; // Lấy role từ session
+    var userRole = Context.Session?.GetString("Role") ?? "Customer";
 
     var error = ViewBag.Error as string ?? TempData["Error"] as string ?? string.Empty;
+    var success = TempData["Success"] as string ?? string.Empty;
     var vehicleTypes = ViewBag.VehicleTypes as List<string> ?? new List<string>();
     var vehicleModels = ViewBag.VehicleModels as List<string> ?? new List<string>();
-    var sortBy = ViewBag.SortBy as string ?? "price"; // Mặc định là "price"
-    var filterType = ViewBag.FilterType as string ?? "Sedan"; // Mặc định là "Sedan"
-    var filterModel = ViewBag.FilterModel as string ?? "Model X"; // Mặc định là "Model X"
-    var minPrice = ViewBag.MinPrice as decimal? ?? 10000m; // Mặc định là 10000
-    var maxPrice = ViewBag.MaxPrice as decimal? ?? 50000m; // Mặc định là 50000
+    var sortBy = ViewBag.SortBy as string ?? "price";
+    var filterType = ViewBag.FilterType as string ?? "Sedan";
+    var filterModel = ViewBag.FilterModel as string ?? "Model X";
+    var minPrice = ViewBag.MinPrice as decimal? ?? 10000m;
+    var maxPrice = ViewBag.MaxPrice as decimal? ?? 50000m;
 }
 
 <header class="site-header">
@@ -33,6 +34,10 @@
         <div class="auth-section">
             @if (isLoggedIn)
             {
+                <a asp-controller="Cart" asp-action="Index" class="cart-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </a>
                 <span class="welcome">Welcome, @username</span>
                 @if (userRole == "Admin" || userRole == "Staff")
                 {
@@ -57,6 +62,10 @@
     @if (!string.IsNullOrEmpty(error))
     {
         <div class="alert alert-danger">@error</div>
+    }
+    @if (!string.IsNullOrEmpty(success))
+    {
+        <div class="alert alert-success">@success</div>
     }
 
     <h2>Welcome to EleVehicle Dealer</h2>
@@ -144,27 +153,66 @@
     </div>
 
     <div class="vehicle-grid" id="vehicleGrid">
+        @{
+            int vehicleIndex = 0;
+            var imageMapping = ViewBag.ImageMapping as Dictionary<int, string> ?? new Dictionary<int, string>();
+        }
         @foreach (var v in Model)
         {
+            var imageName = imageMapping.ContainsKey(v.VehicleId) ? imageMapping[v.VehicleId] : "default.jpg";
+            var imageUrl = $"/images/{imageName}";
+            var placeholderUrl = $"https://via.placeholder.com/400x250/667eea/ffffff?text={System.Web.HttpUtility.UrlEncode(v.Model)}";
+            
             <div class="vehicle-card">
+                @* Debug: VehicleId=@v.VehicleId, Image=@imageName *@
                 <div class="image-container">
-                    <img src="@Url.Content("~/images/" + v.Model.Replace(" ", "-") + ".jpg")"
+                    <img id="vehicle-img-@vehicleIndex"
+                         src="@imageUrl"
                          alt="@v.Model"
-                         onerror="this.src='@Url.Content("~/images/111.jpg")'" />
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='@placeholderUrl'; this.onerror=null;" />
                 </div>
                 <div class="vehicle-card-content">
                     <h4>@v.Model</h4>
                     <p><strong>Type:</strong> <span>@v.Type</span></p>
                     <p><strong>Color:</strong> <span>@v.Color</span></p>
                     <p class="price"><strong>Price:</strong> <span>@v.Price.ToString("C")</span></p>
-                    <button class="btn-buy">Buy Now</button>
+                    <div class="card-actions">
+                        @if (isLoggedIn)
+                        {
+                            <form asp-controller="Cart" asp-action="AddToCart" method="post" style="display: inline; width: 100%;">
+                                <input type="hidden" name="vehicleId" value="@v.VehicleId" />
+                                <input type="hidden" name="quantity" value="1" />
+                                <button type="submit" class="btn-cart">
+                                    <i class="fas fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn-cart" onclick="showLoginAlert()">
+                                <i class="fas fa-lock"></i> Login to Add Cart
+                            </button>
+                        }
+                        <button class="btn-buy" onclick="@(isLoggedIn ? "buyNow(" + v.VehicleId + ")" : "showLoginAlert()")">
+                            <i class="fas fa-shopping-bag"></i> Buy Now
+                        </button>
+                    </div>
                 </div>
             </div>
+            vehicleIndex++;
         }
     </div>
 </div>
 
 <script>
+    function handleImageError(img) {
+        if (img.dataset.placeholder) {
+            img.src = img.dataset.placeholder;
+            img.onerror = null; // Prevent infinite loop
+        }
+    }
+
     function clearFilters() {
         document.getElementById('sortBy').value = 'All';
         document.getElementById('filterType').value = 'All';
@@ -184,7 +232,38 @@
         document.getElementById('filterForm').submit();
     }
 
+    function showLoginAlert() {
+        if (confirm('You need to login to perform this action. Do you want to login now?')) {
+            window.location.href = '@Url.Action("Login", "Account")';
+        }
+    }
+
+    function buyNow(vehicleId) {
+        // Implement buy now functionality
+        alert('Buy now functionality for vehicle ID: ' + vehicleId);
+    }
+
+    async function updateCartBadge() {
+        try {
+            const response = await fetch('/Cart/GetCartCount');
+            const data = await response.json();
+            const badge = document.getElementById('cartBadge');
+            if (badge) {
+                badge.textContent = data.count;
+                if (data.count > 0) {
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error updating cart badge:', error);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        updateCartBadge();
+        
         if (document.getElementById('sortBy')) {
             document.getElementById('sortBy').addEventListener('change', autoSubmitFilter);
         }
@@ -198,14 +277,6 @@
 
     document.getElementById('minPrice').addEventListener('change', autoSubmitFilter);
     document.getElementById('maxPrice').addEventListener('change', autoSubmitFilter);
-
-    document.getElementById('loginLink')?.addEventListener('click', function(e) {
-        console.log('Login link clicked, redirecting to /Account/Login');
-    });
-
-    document.getElementById('registerLink')?.addEventListener('click', function(e) {
-        console.log('Register link clicked, redirecting to /Account/Register');
-    });
 </script>
 
 <style>
@@ -381,6 +452,11 @@
 
     .alert-danger {
         background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+
+    .alert-success {
+        background: var(--secondary-gradient);
         color: white;
     }
 
@@ -611,12 +687,12 @@
         }
 
     .btn-buy {
-        margin-top: 20px;
+        margin-top: 0;
         padding: 12px 25px;
         background: var(--secondary-gradient);
         color: white;
         border: none;
-        border-radius: 20px;
+        border-radius: 25px;
         cursor: pointer;
         font-weight: 600;
         font-size: 15px;
@@ -624,7 +700,150 @@
         letter-spacing: 1px;
         transition: all 0.3s ease;
         box-shadow: var(--shadow-light);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
     }
+
+        .btn-buy i {
+            font-size: 16px;
+        }
+
+        .btn-buy:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-buy:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-light);
+        }
+
+    .cart-icon {
+        position: relative;
+        color: white;
+        font-size: 1.8rem;
+        margin-right: 15px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+        .cart-icon:hover {
+            color: #ffd700;
+            transform: scale(1.15);
+        }
+
+        .cart-icon i {
+            display: inline-block;
+        }
+
+    .cart-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border-radius: 50%;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+        animation: pulse 2s infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    .card-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .btn-cart {
+        padding: 12px 20px;
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+        .btn-cart i {
+            font-size: 16px;
+        }
+
+        .btn-cart:hover {
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-cart:active {
+            transform: translateY(0);
+        }
+
+        .btn-cart i.fa-lock {
+            animation: lockShake 0.5s ease-in-out;
+        }
+
+    @@keyframes lockShake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-5deg); }
+        75% { transform: rotate(5deg); }
+    }
+
+    .btn-buy {
+        margin-top: 0;
+        padding: 12px 25px;
+        background: var(--secondary-gradient);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-light);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+        .btn-buy i {
+            font-size: 16px;
+        }
 
         .btn-buy:hover {
             background: linear-gradient(135deg, #218838, #1ea085);

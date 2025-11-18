@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using EleVehicleDealer.BLL.Interfaces;
 using EleVehicleDealer.Domain.DTOs.Vehicles;
 using Microsoft.AspNetCore.Mvc;
+using EleVehicleDealer.Presentation.Helpers;
+using System.Text.Json;
 
 namespace EleVehicleDealer.Presentation.Controllers
 {
@@ -12,21 +14,55 @@ namespace EleVehicleDealer.Presentation.Controllers
         private readonly IVehicleService _vehicleService;
         private readonly IAccountService _accountService;
         private readonly IOrderService _orderService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public HomeController(IVehicleService vehicleService, IAccountService accountService, IOrderService orderService)
+        public HomeController(IVehicleService vehicleService, IAccountService accountService, IOrderService orderService, IWebHostEnvironment webHostEnvironment)
         {
             _vehicleService = vehicleService;
             _accountService = accountService;
             _orderService = orderService;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public IActionResult Index()
         {
             return RedirectToAction("Home"); // Redirect đến action Home
         }
+
         public async Task<IActionResult> Home()
         {
             var vehicles = (await _vehicleService.GetAllVehicleAsync()).ToList();
+
+            // Lấy hoặc tạo mapping VehicleId -> ImageName
+            var imageMapping = HttpContext.Session.GetString("VehicleImageMapping");
+            Dictionary<int, string> mapping;
+            
+            if (string.IsNullOrEmpty(imageMapping))
+            {
+                mapping = new Dictionary<int, string>();
+                var availableImages = ImageHelper.GetAllImages(_webHostEnvironment);
+                var random = new Random();
+                
+                foreach (var vehicle in vehicles)
+                {
+                    if (availableImages.Count > 0)
+                    {
+                        mapping[vehicle.VehicleId] = availableImages[random.Next(availableImages.Count)];
+                    }
+                    else
+                    {
+                        mapping[vehicle.VehicleId] = "default.jpg";
+                    }
+                }
+                
+                HttpContext.Session.SetString("VehicleImageMapping", JsonSerializer.Serialize(mapping));
+            }
+            else
+            {
+                mapping = JsonSerializer.Deserialize<Dictionary<int, string>>(imageMapping) ?? new Dictionary<int, string>();
+            }
+
+            ViewBag.ImageMapping = mapping;
 
             var vehicleTypes = vehicles.Select(v => v.Type).Distinct().ToList();
             var vehicleModels = vehicles.Select(v => v.Model).Distinct().ToList();

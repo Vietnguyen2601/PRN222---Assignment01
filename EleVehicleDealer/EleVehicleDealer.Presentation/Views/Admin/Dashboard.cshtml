@@ -1,4 +1,4 @@
-@model EleVehicleDealer.Domain.DTOs.Dashboard.DashboardDto
+﻿@model EleVehicleDealer.Domain.DTOs.Dashboard.DashboardDto
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     ViewData["Title"] = "Admin Dashboard";
@@ -523,12 +523,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Debug: Log data ?? ki?m tra
+    // Debug: Log data để kiểm tra
     console.log('Quarter Data:', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByQuarter)));
     console.log('Month Data:', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth)));
     console.log('Station Data:', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByStation)));
 
-    // Chart colors v?i opacity ph� h?p
+    // Chart colors với opacity phù hợp
     const chartColors = {
         primary: 'rgba(102, 126, 234, 0.8)',
         primaryFill: 'rgba(102, 126, 234, 0.2)',
@@ -540,7 +540,7 @@
         infoFill: 'rgba(79, 172, 254, 0.2)'
     };
 
-    // Quarter Chart - S? d?ng property names v?i ch? hoa
+    // Quarter Chart - Sử dụng property names với chữ hoa
     const quarterData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByQuarter));
     const quarterCtx = document.getElementById('quarterChart').getContext('2d');
     
@@ -586,29 +586,22 @@
         }
     });
 
-    // Month Chart
+    // Month Chart - Changed to Bar Chart
     const monthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth));
     const monthCtx = document.getElementById('monthChart').getContext('2d');
     
     console.log('Creating Month Chart with data:', monthData);
     
     const monthChart = new Chart(monthCtx, {
-        type: 'line',
+        type: 'bar', // Đổi từ 'line' sang 'bar'
         data: {
             labels: monthData.map(d => d.Period || d.period),
             datasets: [{
                 label: 'Revenue',
                 data: monthData.map(d => d.Revenue || d.revenue),
-                borderColor: chartColors.secondary,
-                backgroundColor: chartColors.secondaryFill,
-                tension: 0.4,
-                fill: true,
-                borderWidth: 3,
-                pointBackgroundColor: chartColors.secondary,
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
+                backgroundColor: chartColors.secondary,
+                borderRadius: 10,
+                borderWidth: 0
             }]
         },
         options: {
@@ -822,12 +815,12 @@
         } catch (error) {
             console.error('Error loading custom date range:', error);
             
-            // N?u c� l?i JSON parse, th? load data t? response text
+            // Nếu có lỗi JSON parse, thử load data từ response text
             if (error instanceof SyntaxError) {
                 console.log('JSON parse error, trying to reload...');
-                // Kh�ng hi?n th? alert error n?a, ch? log
+                // Không hiển thị alert error nữa, chỉ log
             } else {
-                // Ch? hi?n th? alert cho l?i th?t s?
+                // Chỉ hiển thị alert cho lỗi thật sự
                 console.log('Request error:', error.message);
             }
         }

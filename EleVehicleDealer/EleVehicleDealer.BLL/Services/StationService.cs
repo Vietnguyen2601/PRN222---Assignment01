@@ -21,5 +21,18 @@ namespace EleVehicleDealer.BLL.Services
             var stations = await _stationRepository.GetAllStationsAsync();
             return stations.ToStationSummaryDtos();
         }
+
+        public async Task<IEnumerable<StationSummaryDto>> GetStationsByVehicleModelAsync(string vehicleModel)
+        {
+            var allStations = await _stationRepository.GetAllStationsAsync();
+            var stationsWithVehicle = allStations
+                .Where(s => s.IsActive && 
+                       s.StationCars.Any(sc => sc.IsActive && 
+                                              sc.Vehicle != null && 
+                                              sc.Vehicle.Model == vehicleModel &&
+                                              sc.Quantity > 0))
+                .ToList();
+            return stationsWithVehicle.ToStationSummaryDtos();
+        }
     }
 }

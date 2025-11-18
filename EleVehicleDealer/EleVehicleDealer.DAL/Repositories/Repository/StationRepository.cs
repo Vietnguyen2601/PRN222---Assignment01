@@ -19,6 +19,8 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<IEnumerable<Station>> GetAllStationsAsync()
         {
             return await _context.Stations
+                .Include(s => s.StationCars)
+                    .ThenInclude(sc => sc.Vehicle)
                 .AsNoTracking()
                 .ToListAsync();
         }

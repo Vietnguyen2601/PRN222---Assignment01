@@ -21,6 +21,8 @@ builder.Services.AddScoped<IStationCarService, StationCarService>();
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 builder.Services.AddScoped<IVehicleService, VehicleService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<IScheduleService, ScheduleService>();
 
 // Thêm session
 builder.Services.AddSession(options =>

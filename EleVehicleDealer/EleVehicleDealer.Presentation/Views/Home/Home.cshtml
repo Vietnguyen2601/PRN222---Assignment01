@@ -25,6 +25,10 @@
         <nav class="main-navigation">
             <ul>
                 <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                @if (isLoggedIn && userRole == "Customer")
+                {
+                    <li><a asp-controller="Customer" asp-action="Dashboard">My Dashboard</a></li>
+                }
                 <li><a asp-controller="Menu" asp-action="Index">Menu</a></li>
                 <li><a asp-controller="Category" asp-action="Index">Category</a></li>
                 <li><a asp-controller="Home" asp-action="About">About</a></li>
@@ -197,11 +201,49 @@
                         <button class="btn-buy" onclick="@(isLoggedIn ? "buyNow(" + v.VehicleId + ")" : "showLoginAlert()")">
                             <i class="fas fa-shopping-bag"></i> Buy Now
                         </button>
+                        <button class="btn-test-drive" onclick="@(isLoggedIn ? "openTestDriveModal(" + v.VehicleId + ", '" + v.Model + "')" : "showLoginAlert()")">
+                            <i class="fas fa-car"></i> Test Drive
+                        </button>
                     </div>
                 </div>
             </div>
             vehicleIndex++;
         }
+    </div>
+</div>
+
+<!-- Test Drive Modal -->
+<div id="testDriveModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-car"></i> Đặt Lịch Lái Thử</h3>
+            <button type="button" class="modal-close" onclick="closeTestDriveModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="testDriveForm" onsubmit="submitTestDrive(event)">
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label>Xe:</label>
+                    <div style="padding: 12px 15px; background: #f8f9fa; border-radius: 10px; font-weight: 600; color: #667eea;">
+                        <span id="vehicleModelDisplay"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="stationSelect">Trạm:</label>
+                    <select id="stationSelect" name="stationName" class="form-control" required>
+                        <option value="">-- Chọn trạm --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleTime">Thời gian:</label>
+                    <input type="datetime-local" id="scheduleTime" name="scheduleTime" class="form-control" required />
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-modal btn-modal-cancel" onclick="closeTestDriveModal()">Hủy</button>
+            <button type="submit" form="testDriveForm" class="btn-modal btn-modal-submit">Xác Nhận</button>
+        </div>
     </div>
 </div>
 
@@ -277,6 +319,101 @@
 
     document.getElementById('minPrice').addEventListener('change', autoSubmitFilter);
     document.getElementById('maxPrice').addEventListener('change', autoSubmitFilter);
+
+    // Test Drive Modal Functions
+    let selectedVehicleId = null;
+    let selectedVehicleModel = null;
+
+    function openTestDriveModal(vehicleId, vehicleModel) {
+        selectedVehicleId = vehicleId;
+        selectedVehicleModel = vehicleModel;
+        document.getElementById('vehicleModelDisplay').textContent = vehicleModel;
+        document.getElementById('testDriveModal').classList.add('active');
+        loadStationsByVehicle(vehicleModel);
+    }
+
+    function closeTestDriveModal() {
+        document.getElementById('testDriveModal').classList.remove('active');
+        document.getElementById('testDriveForm').reset();
+    }
+
+    async function loadStationsByVehicle(vehicleModel) {
+        try {
+            const response = await fetch(`/Home/GetStationsByVehicleModel?model=${encodeURIComponent(vehicleModel)}`);
+            const data = await response.json();
+            const stationSelect = document.getElementById('stationSelect');
+            stationSelect.innerHTML = '<option value="">-- Chọn trạm --</option>';
+            
+            if (data.error) {
+                alert('Lỗi: ' + data.error);
+                return;
+            }
+            
+            if (data.length === 0) {
+                stationSelect.innerHTML = '<option value="">Không có trạm nào có xe này</option>';
+                return;
+            }
+            
+            data.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.stationName;
+                option.textContent = `${station.stationName} - ${station.location}`;
+                stationSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading stations:', error);
+            alert('Không thể tải danh sách trạm. Vui lòng thử lại.');
+        }
+    }
+
+    async function submitTestDrive(event) {
+        event.preventDefault();
+        
+        const stationName = document.getElementById('stationSelect').value;
+        const scheduleTime = document.getElementById('scheduleTime').value;
+
+        if (!stationName || !scheduleTime) {
+            alert('Vui lòng điền đầy đủ thông tin!');
+            return;
+        }
+
+        const requestData = {
+            vehicleModel: selectedVehicleModel,
+            stationName: stationName,
+            scheduleTime: scheduleTime
+        };
+
+        try {
+            const response = await fetch('/Schedule/BookTestDrive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Đặt lịch lái thử thành công! Chúng tôi sẽ liên hệ với bạn sớm.');
+                closeTestDriveModal();
+            } else {
+                alert('Có lỗi xảy ra: ' + (result.message || 'Vui lòng thử lại.'));
+            }
+        } catch (error) {
+            console.error('Error submitting test drive:', error);
+            alert('Không thể đặt lịch. Vui lòng thử lại sau.');
+        }
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('testDriveModal');
+        if (event.target === modal) {
+            closeTestDriveModal();
+        }
+    });
 </script>
 
 <style>
@@ -854,5 +991,198 @@
         .btn-buy:active {
             transform: translateY(0);
             box-shadow: var(--shadow-light);
+        }
+
+    .btn-test-drive {
+        margin-top: 0;
+        padding: 12px 25px;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-light);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+        .btn-test-drive i {
+            font-size: 16px;
+        }
+
+        .btn-test-drive:hover {
+            background: linear-gradient(135deg, #ee5a52, #dc4c3e);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-test-drive:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-light);
+        }
+
+    /* Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        max-width: 600px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.8rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .modal-close:hover {
+            color: #dc3545;
+            transform: rotate(90deg);
+        }
+
+    .modal-body {
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e8ed;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+    }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+            outline: none;
+        }
+
+    .modal-footer {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+    }
+
+    .btn-modal {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-modal-cancel {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+
+        .btn-modal-cancel:hover {
+            background: linear-gradient(135deg, #5a6268, #343a40);
+            transform: translateY(-2px);
+        }
+
+    .btn-modal-submit {
+        background: var(--primary-gradient);
+        color: white;
+    }
+
+        .btn-modal-submit:hover {
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+            transform: translateY(-2px);
         }
 </style>

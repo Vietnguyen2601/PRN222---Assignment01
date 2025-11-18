@@ -1,0 +1,608 @@
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model EleVehicleDealer.Domain.DTOs.CustomerDashboardDto
+@{
+    ViewData["Title"] = "My Dashboard";
+    var username = Context.Session?.GetString("Username") ?? string.Empty;
+    var isLoggedIn = !string.IsNullOrEmpty(username);
+    var userRole = Context.Session?.GetString("Role") ?? "Customer";
+}
+
+<header class="site-header">
+    <div class="header-container">
+        <div class="logo-section">
+            <a asp-controller="Home" asp-action="Index" class="logo">EleVehicle Dealer</a>
+        </div>
+        <nav class="main-navigation">
+            <ul>
+                <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li><a asp-controller="Customer" asp-action="Dashboard" class="active">My Dashboard</a></li>
+            </ul>
+        </nav>
+        <div class="auth-section">
+            @if (isLoggedIn)
+            {
+                <a asp-controller="Cart" asp-action="Index" class="cart-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </a>
+                <span class="welcome">Welcome, @username</span>
+                <a asp-controller="Account" asp-action="Logout" class="btn-logout">Logout</a>
+            }
+        </div>
+    </div>
+</header>
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-tachometer-alt"></i> My Dashboard</h1>
+        <p class="subtitle">Welcome back, <strong>@Model.CustomerName</strong>!</p>
+    </div>
+
+    <div class="dashboard-content">
+        <!-- Purchased Vehicles Section -->
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-car"></i> My Purchased Vehicles</h2>
+                <span class="badge">@Model.PurchasedVehicles.Count vehicles</span>
+            </div>
+            
+            @if (Model.PurchasedVehicles.Any())
+            {
+                <div class="vehicles-grid">
+                    @foreach (var vehicle in Model.PurchasedVehicles)
+                    {
+                        <div class="vehicle-card">
+                            <div class="vehicle-card-header">
+                                <h3>@vehicle.VehicleModel</h3>
+                                <span class="status-badge status-@vehicle.Status.ToLower()">@vehicle.Status</span>
+                            </div>
+                            <div class="vehicle-card-body">
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-shopping-bag"></i> Order ID:</span>
+                                    <span class="value">#@vehicle.OrderId</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-calendar"></i> Purchase Date:</span>
+                                    <span class="value">@vehicle.OrderDate.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-map-marker-alt"></i> Station:</span>
+                                    <span class="value">@vehicle.StationName</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-boxes"></i> Quantity:</span>
+                                    <span class="value">@vehicle.Quantity</span>
+                                </div>
+                                <div class="info-row price-row">
+                                    <span class="label"><i class="fas fa-dollar-sign"></i> Price:</span>
+                                    <span class="value price">@vehicle.Price.ToString("C")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-car-side"></i>
+                    <p>You haven't purchased any vehicles yet.</p>
+                    <a asp-controller="Home" asp-action="Home" class="btn-primary">Browse Vehicles</a>
+                </div>
+            }
+        </section>
+
+        <!-- Test Drive Schedules Section -->
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar-check"></i> My Test Drive Schedules</h2>
+                <span class="badge">@Model.TestDriveSchedules.Count schedules</span>
+            </div>
+            
+            @if (Model.TestDriveSchedules.Any())
+            {
+                <div class="schedules-list">
+                    @foreach (var schedule in Model.TestDriveSchedules.OrderByDescending(s => s.ScheduleTime))
+                    {
+                        <div class="schedule-card">
+                            <div class="schedule-icon">
+                                <i class="fas fa-car"></i>
+                            </div>
+                            <div class="schedule-details">
+                                <h3>@schedule.VehicleModel</h3>
+                                <div class="schedule-info">
+                                    <div class="info-item">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>@schedule.StationName</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>@schedule.ScheduleTime.ToString("dd MMM yyyy, HH:mm")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="schedule-status">
+                                <span class="status-badge status-@schedule.Status.ToLower()">@schedule.Status</span>
+                                @if (schedule.Status.ToLower() == "pending" || schedule.Status.ToLower() == "confirmed")
+                                {
+                                    <button class="btn-cancel" onclick="cancelSchedule(@schedule.ScheduleId)">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>You don't have any test drive schedules.</p>
+                    <a asp-controller="Home" asp-action="Home" class="btn-primary">Schedule a Test Drive</a>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+<script>
+    async function cancelSchedule(scheduleId) {
+        if (!confirm('Are you sure you want to cancel this test drive?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/Customer/CancelSchedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ scheduleId: scheduleId })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Test drive cancelled successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to cancel test drive.');
+        }
+    }
+
+    async function updateCartBadge() {
+        try {
+            const response = await fetch('/Cart/GetCartCount');
+            const data = await response.json();
+            const badge = document.getElementById('cartBadge');
+            if (badge) {
+                badge.textContent = data.count;
+                if (data.count > 0) {
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error updating cart badge:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCartBadge();
+    });
+</script>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
+        --secondary-gradient: linear-gradient(135deg, #28a745, #20c997);
+        --danger-gradient: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+        padding-top: 80px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+    }
+
+    .site-header {
+        background: var(--primary-gradient);
+        padding: 15px 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: var(--shadow-light);
+    }
+
+    .header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 30px;
+    }
+
+    .logo {
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .main-navigation ul {
+        list-style: none;
+        display: flex;
+        gap: 30px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .main-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        transition: color 0.3s ease;
+    }
+
+    .main-navigation a:hover,
+    .main-navigation a.active {
+        color: #ffd700;
+    }
+
+    .auth-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .auth-section span,
+    .auth-section a {
+        color: white;
+        font-weight: 600;
+    }
+
+    .btn-logout {
+        padding: 10px 25px;
+        border-radius: 25px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .btn-logout:hover {
+        background: linear-gradient(135deg, #bd2130, #a71d2a);
+        transform: translateY(-2px);
+    }
+
+    .cart-icon {
+        position: relative;
+        color: white;
+        font-size: 1.8rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .cart-icon:hover {
+        color: #ffd700;
+        transform: scale(1.15);
+    }
+
+    .cart-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border-radius: 50%;
+        min-width: 22px;
+        height: 22px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        border: 2px solid white;
+    }
+
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 20px auto;
+        padding: 0 30px;
+    }
+
+    .dashboard-header {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .dashboard-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.5rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: #6c757d;
+        font-size: 1.2rem;
+        margin: 0;
+    }
+
+    .dashboard-content {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .dashboard-section {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: var(--shadow-light);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        color: #2c3e50;
+    }
+
+    .badge {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .vehicles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+    }
+
+    .vehicle-card {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: var(--shadow-light);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .vehicle-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+        border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .vehicle-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .vehicle-card-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.5rem;
+    }
+
+    .status-badge {
+        padding: 6px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: white;
+    }
+
+    .status-complete, .status-completed {
+        background: var(--secondary-gradient);
+        color: white;
+    }
+
+    .status-cancel, .status-cancelled {
+        background: var(--danger-gradient);
+        color: white;
+    }
+
+    .vehicle-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+    }
+
+    .info-row .label {
+        color: #6c757d;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .info-row .value {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .price-row {
+        margin-top: 10px;
+        padding-top: 15px;
+        border-top: 2px solid #f8f9fa;
+    }
+
+    .price {
+        font-size: 1.5rem;
+        background: var(--secondary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .schedules-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .schedule-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border-radius: 15px;
+        box-shadow: var(--shadow-light);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .schedule-card:hover {
+        transform: translateX(5px);
+        box-shadow: var(--shadow-hover);
+        border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .schedule-icon {
+        width: 70px;
+        height: 70px;
+        background: var(--primary-gradient);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .schedule-details {
+        flex: 1;
+    }
+
+    .schedule-details h3 {
+        margin: 0 0 10px 0;
+        color: #2c3e50;
+        font-size: 1.5rem;
+    }
+
+    .schedule-info {
+        display: flex;
+        gap: 25px;
+        flex-wrap: wrap;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .info-item i {
+        color: #667eea;
+    }
+
+    .schedule-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .btn-cancel {
+        padding: 8px 20px;
+        background: var(--danger-gradient);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-light);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        color: #e9ecef;
+        margin-bottom: 20px;
+    }
+
+    .empty-state p {
+        font-size: 1.2rem;
+        margin-bottom: 25px;
+    }
+
+    .btn-primary {
+        display: inline-block;
+        padding: 12px 30px;
+        background: var(--primary-gradient);
+        color: white;
+        text-decoration: none;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+</style>

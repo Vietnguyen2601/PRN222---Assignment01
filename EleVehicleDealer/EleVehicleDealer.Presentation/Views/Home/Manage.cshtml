@@ -31,6 +31,7 @@
             <li><a href="#user-tab" class="nav-link active" onclick="showTab('user-tab')">User Management</a></li>
             <li><a href="#vehicle-tab" class="nav-link" onclick="showTab('vehicle-tab')">Vehicle Management</a></li>
             <li><a href="#order-tab" class="nav-link" onclick="showTab('order-tab')">Order Management</a></li>
+            <li><a href="#schedule-tab" class="nav-link" onclick="showTab('schedule-tab')">Test Drive Schedules</a></li>
         </ul>
     </aside>
 
@@ -158,6 +159,63 @@
                 </table>
             </div>
         </section>
+
+        <!-- Test Drive Schedule Management Tab -->
+        <section id="schedule-tab" class="admin-tab">
+            <h3>Test Drive Schedule Management</h3>
+            <input type="text" class="search-input" placeholder="Search Schedules..." oninput="searchTable('schedule-table')">
+            <div class="table-container">
+                <table class="admin-table" id="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Vehicle Model</th>
+                            <th>Station</th>
+                            <th>Schedule Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var schedules = ViewBag.Schedules as List<EleVehicleDealer.Domain.DTOs.Schedules.ScheduleDto> ?? new List<EleVehicleDealer.Domain.DTOs.Schedules.ScheduleDto>();
+                        }
+                        @foreach (var schedule in schedules)
+                        {
+                            <tr>
+                                <td>@schedule.ScheduleId</td>
+                                <td>@schedule.CustomerName</td>
+                                <td>@schedule.VehicleModel</td>
+                                <td>@schedule.StationName</td>
+                                <td>@schedule.ScheduleTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>
+                                    <span class="status-badge status-@schedule.Status.ToLower()">
+                                        @schedule.Status
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (schedule.Status.ToLower() == "pending")
+                                    {
+                                        <button type="button" class="btn-confirm" onclick="updateScheduleStatus(@schedule.ScheduleId, 'Confirmed')">Confirm</button>
+                                        <button type="button" class="btn-reject" onclick="updateScheduleStatus(@schedule.ScheduleId, 'Cancel')">Reject</button>
+                                    }
+                                    else if (schedule.Status.ToLower() == "confirmed")
+                                    {
+                                        <button type="button" class="btn-complete" onclick="updateScheduleStatus(@schedule.ScheduleId, 'Completed')">Complete</button>
+                                        <button type="button" class="btn-reject" onclick="updateScheduleStatus(@schedule.ScheduleId, 'Cancel')">Cancel</button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">@schedule.Status</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 </div>
 
@@ -171,6 +229,41 @@
 
         document.getElementById(tabId).classList.add('active');
         event.target.classList.add('active');
+    }
+
+    async function updateScheduleStatus(scheduleId, status) {
+        let message = '';
+        if (status === 'Confirmed') {
+            message = 'Are you sure you want to confirm this test drive schedule?';
+        } else if (status === 'Completed') {
+            message = 'Mark this test drive as completed?';
+        } else if (status === 'Cancel') {
+            message = 'Are you sure you want to cancel this test drive schedule?';
+        }
+        
+        if (!confirm(message)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/Schedule/UpdateStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${scheduleId}&status=${status}`
+            });
+
+            if (response.ok) {
+                alert(`Schedule ${status.toLowerCase()}d successfully!`);
+                location.reload();
+            } else {
+                alert('Failed to update schedule status.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while updating schedule status.');
+        }
     }
 
     function searchTable(tableId) {
@@ -423,7 +516,10 @@
 
     .btn-edit,
     .btn-delete,
-    .btn-add {
+    .btn-add,
+    .btn-confirm,
+    .btn-complete,
+    .btn-reject {
         padding: 6px 12px;
         border: none;
         border-radius: 6px;
@@ -470,6 +566,69 @@
             background: linear-gradient(135deg, #5a6fd8, #6a4190);
             transform: translateY(-1px);
         }
+
+    .btn-confirm {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+        .btn-confirm:hover {
+            background: linear-gradient(135deg, #117a8b, #0f6677);
+            transform: translateY(-1px);
+        }
+
+    .btn-complete {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+        .btn-complete:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-1px);
+        }
+
+    .btn-reject {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: white;
+    }
+
+        .btn-reject:hover {
+            background: linear-gradient(135deg, #e0a800, #f57c00);
+            transform: translateY(-1px);
+        }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: white;
+    }
+
+    .status-confirmed {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .status-complete, .status-completed {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .status-cancel, .status-cancelled {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+    .text-muted {
+        color: #6c757d;
+        font-style: italic;
+    }
 
     .table-actions {
         display: flex;

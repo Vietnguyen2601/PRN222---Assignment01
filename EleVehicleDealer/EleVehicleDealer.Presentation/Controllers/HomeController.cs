@@ -14,13 +14,17 @@ namespace EleVehicleDealer.Presentation.Controllers
         private readonly IVehicleService _vehicleService;
         private readonly IAccountService _accountService;
         private readonly IOrderService _orderService;
+        private readonly IStationService _stationService;
+        private readonly IScheduleService _scheduleService;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public HomeController(IVehicleService vehicleService, IAccountService accountService, IOrderService orderService, IWebHostEnvironment webHostEnvironment)
+        public HomeController(IVehicleService vehicleService, IAccountService accountService, IOrderService orderService, IStationService stationService, IScheduleService scheduleService, IWebHostEnvironment webHostEnvironment)
         {
             _vehicleService = vehicleService;
             _accountService = accountService;
             _orderService = orderService;
+            _stationService = stationService;
+            _scheduleService = scheduleService;
             _webHostEnvironment = webHostEnvironment;
         }
 
@@ -153,12 +157,47 @@ namespace EleVehicleDealer.Presentation.Controllers
             var vehicles = (await _vehicleService.GetAllVehicleAsync()).ToList();
             var accounts = (await _accountService.GetAllAsync()).ToList();
             var orders = (await _orderService.GetAllOrdersAsync()).ToList();
+            var schedules = (await _scheduleService.GetAllSchedulesAsync()).ToList();
 
             ViewBag.Vehicles = vehicles;
             ViewBag.Accounts = accounts;
             ViewBag.Orders = orders;
+            ViewBag.Schedules = schedules;
 
             return View(); // Sử dụng Views/Home/Manage.cshtml để render _ManagementPage
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetStations()
+        {
+            try
+            {
+                var stations = await _stationService.GetAllStationsAsync();
+                var activeStations = stations.Where(s => s.IsActive).ToList();
+                return Json(activeStations);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetStationsByVehicleModel(string model)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(model))
+                {
+                    return Json(new { error = "Model is required" });
+                }
+                var stations = await _stationService.GetStationsByVehicleModelAsync(model);
+                return Json(stations);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
     }
 }

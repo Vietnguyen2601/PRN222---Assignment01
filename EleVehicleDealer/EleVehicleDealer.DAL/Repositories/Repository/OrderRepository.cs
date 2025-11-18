@@ -40,9 +40,14 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<IEnumerable<Order>> GetOrdersWithDetailsAsync()
         {
             return await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.Staff)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.StationCar)
                         .ThenInclude(sc => sc.Vehicle)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.StationCar)
+                        .ThenInclude(sc => sc.Station)
                 .Include(o => o.Payments)
                 .Where(o => o.IsActive)
                 .AsNoTracking()
@@ -59,9 +64,14 @@ namespace EleVehicleDealer.DAL.Repositories.Repository
         public async Task<Order?> GetOrderWithDetailsAsync(int id)
         {
             return await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.Staff)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.StationCar)
                         .ThenInclude(sc => sc.Vehicle)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.StationCar)
+                        .ThenInclude(sc => sc.Station)
                 .Include(o => o.Payments)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(o => o.OrderId == id && o.IsActive);
